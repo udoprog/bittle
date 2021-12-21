@@ -299,6 +299,7 @@ where
     /// a.set(67);
     ///
     /// let mut b = FixedSet::<u128>::empty();
+    /// b.set(31);
     /// b.set(62);
     ///
     /// b.merge(&a);
@@ -552,7 +553,7 @@ macro_rules! impl_num_bits {
 
             #[inline]
             fn merge(&mut self, other: &Self) {
-                *self ^= other;
+                *self |= other;
             }
 
             #[inline]
