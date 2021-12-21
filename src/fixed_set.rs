@@ -287,7 +287,7 @@ where
         self.bits.clear();
     }
 
-    /// Merge this set with another.
+    /// Construct the union between this and another set.
     ///
     /// # Examples
     ///
@@ -302,14 +302,81 @@ where
     /// b.set(31);
     /// b.set(62);
     ///
-    /// b.merge(&a);
+    /// a.union(&b);
     ///
-    /// assert!(b.test(31));
-    /// assert!(b.test(62));
-    /// assert!(b.test(67));
+    /// assert!(a.test(31));
+    /// assert!(a.test(62));
+    /// assert!(a.test(67));
     /// ```
-    pub fn merge(&mut self, other: &Self) {
-        self.bits.merge(&other.bits);
+    pub fn union(&mut self, other: &Self) {
+        self.bits.union(&other.bits);
+    }
+
+    /// Construct the difference between this and another set.
+    ///
+    /// The new set will contain elements which are exlusively contained in the
+    /// second set. This is not a commutative operation.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::FixedSet;
+    ///
+    /// let mut a = FixedSet::<u128>::empty();
+    /// a.set(31);
+    /// a.set(67);
+    ///
+    /// let mut b = FixedSet::<u128>::empty();
+    /// b.set(31);
+    /// b.set(62);
+    ///
+    /// let mut c = a;
+    /// c.difference(&b);
+    ///
+    /// let mut d = b;
+    /// d.difference(&a);
+    ///
+    /// assert_ne!(c, d);
+    ///
+    /// assert!(!c.test(31));
+    /// assert!(c.test(62));
+    /// assert!(!c.test(67));
+    ///
+    /// assert!(!d.test(31));
+    /// assert!(!d.test(62));
+    /// assert!(d.test(67));
+    /// ```
+    pub fn difference(&mut self, other: &Self) {
+        self.bits.difference(&other.bits);
+    }
+
+    /// Construct the symmetric difference between this and another set.
+    ///
+    /// The new set will contain elements which exist exclusively in one or the
+    /// other.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::FixedSet;
+    ///
+    /// let mut a = FixedSet::<u128>::empty();
+    /// a.set(31);
+    /// a.set(67);
+    ///
+    /// let mut b = FixedSet::<u128>::empty();
+    /// b.set(31);
+    /// b.set(62);
+    ///
+    /// let mut c = a;
+    /// c.symmetric_difference(&b);
+    ///
+    /// assert!(!c.test(31));
+    /// assert!(c.test(62));
+    /// assert!(c.test(67));
+    /// ```
+    pub fn symmetric_difference(&mut self, other: &Self) {
+        self.bits.symmetric_difference(&other.bits);
     }
 
     /// Construct an iterator over a bit set.
@@ -510,10 +577,20 @@ pub trait Bits: Sized + Copy + Eq + Ord + Hash {
     /// See [FixedSet::clear].
     fn clear(&mut self);
 
-    /// Merge these bits with another.
+    /// Construct the union between two sets of bits.
     ///
-    /// See [FixedSet::merge].
-    fn merge(&mut self, other: &Self);
+    /// See [FixedSet::union].
+    fn union(&mut self, other: &Self);
+
+    /// Construct the difference between two sets of bits.
+    ///
+    /// See [FixedSet::difference].
+    fn difference(&mut self, other: &Self);
+
+    /// Construct the symmetric difference between two sets of bits.
+    ///
+    /// See [FixedSet::symmetric_difference].
+    fn symmetric_difference(&mut self, other: &Self);
 
     /// Construct an iterator over a bit pattern.
     ///
@@ -552,8 +629,18 @@ macro_rules! impl_num_bits {
             }
 
             #[inline]
-            fn merge(&mut self, other: &Self) {
+            fn union(&mut self, other: &Self) {
                 *self |= other;
+            }
+
+            #[inline]
+            fn difference(&mut self, other: &Self) {
+                *self = other & !*self;
+            }
+
+            #[inline]
+            fn symmetric_difference(&mut self, other: &Self) {
+                *self ^= other;
             }
 
             #[inline]
@@ -605,9 +692,21 @@ where
         }
     }
 
-    fn merge(&mut self, other: &Self) {
+    fn union(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.merge(i);
+            o.union(i);
+        }
+    }
+
+    fn difference(&mut self, other: &Self) {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.difference(i);
+        }
+    }
+
+    fn symmetric_difference(&mut self, other: &Self) {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.symmetric_difference(i);
         }
     }
 
