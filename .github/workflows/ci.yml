@@ -1,4 +1,4 @@
-name: Rust
+name: CI
 
 on: [push, pull_request]
 
@@ -6,13 +6,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         override: true
         profile: minimal
-    - name: cargo test
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
+    - run: cargo test
