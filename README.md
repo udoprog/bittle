@@ -48,10 +48,6 @@ assert_eq!(it.next(), Some(&48));
 assert_eq!(it.next(), None);
 ```
 
-<br>
-
-## Examples
-
 [Copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 [Mask]: https://docs.rs/bittle/latest/bittle/trait.Mask.html
 [Mask::join]: https://docs.rs/bittle/latest/bittle/trait.Mask.html#method.join
