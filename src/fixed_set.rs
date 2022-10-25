@@ -62,6 +62,25 @@ impl<T> FixedSet<T>
 where
     T: Bits,
 {
+    /// Construct a set from its underlying bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::FixedSet;
+    ///
+    /// let mut set = FixedSet::<u8>::from_bits(0b00001001);
+    ///
+    /// assert!(!set.is_empty());
+    /// assert!(set.test(0));
+    /// assert!(!set.test(1));
+    /// assert!(!set.test(2));
+    /// assert!(set.test(3));
+    /// ```
+    pub const fn from_bits(bits: T) -> Self {
+        Self { bits }
+    }
+
     /// Construct a bit set from an array.
     pub fn from_array<const N: usize>(items: [usize; N]) -> Self {
         let mut set = Self::empty();
