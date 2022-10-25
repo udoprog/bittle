@@ -13,8 +13,9 @@ The bit sets are entirely defined using [Copy] types in Rust such as `u64`
 or `[u128; 4]` who's number of bits define the capacity of the set.
 
 ```rust
-use bittle::FixedSet;
 use std::mem;
+
+use bittle::FixedSet;
 
 let mut set = FixedSet::<u64>::empty();
 
