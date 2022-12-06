@@ -7,10 +7,10 @@ pub use self::none::None;
 /// A trait used to check if an index is masked.
 pub trait Mask: Sized {
     /// The iterator over a mask, indicating all items in the mask.
-    type Iter: Iterator<Item = usize>;
+    type Iter: Iterator<Item = u32>;
 
     /// Test if the given bit is set.
-    fn test(&self, index: usize) -> bool;
+    fn test(&self, index: u32) -> bool;
 
     /// Construct an iterator over a bit set.
     fn iter(&self) -> Self::Iter;
@@ -51,7 +51,7 @@ where
 {
     type Iter = M::Iter;
 
-    fn test(&self, index: usize) -> bool {
+    fn test(&self, index: u32) -> bool {
         (**self).test(index)
     }
 
@@ -66,12 +66,12 @@ where
 pub struct Join<A, B> {
     mask: A,
     right: B,
-    last: usize,
+    last: u32,
 }
 
 impl<A, B> Iterator for Join<A, B>
 where
-    A: Iterator<Item = usize>,
+    A: Iterator<Item = u32>,
     B: Iterator,
 {
     type Item = B::Item;
@@ -79,7 +79,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.mask.next()?;
         let offset = index - self.last;
-        let buf = self.right.nth(offset)?;
+        let buf = self.right.nth(offset as usize)?;
         self.last = index + 1;
         Some(buf)
     }

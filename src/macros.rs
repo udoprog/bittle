@@ -15,6 +15,6 @@
 #[macro_export]
 macro_rules! fixed_set {
     ($($set:expr),* $(,)?) => {
-        $crate::FixedSet::from_array([$($set,)*])
+        $crate::FixedSet::from_indexes([$($set,)*])
     };
 }

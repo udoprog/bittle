@@ -17,7 +17,7 @@ use std::mem;
 
 use bittle::FixedSet;
 
-let mut set = FixedSet::<u64>::empty();
+let mut set = FixedSet::<u64>::new();
 
 assert!(!set.test(31));
 set.set(31);
@@ -36,7 +36,7 @@ set. It has useful utilities such as iterating over masked elements through
 use bittle::{FixedSet, Mask};
 
 let elements = vec![10, 48, 101];
-let mut m = FixedSet::<u128>::empty();
+let mut m = FixedSet::<u128>::new();
 
 // Since set is empty, no elements are iterated over.
 let mut it = m.join(&elements);

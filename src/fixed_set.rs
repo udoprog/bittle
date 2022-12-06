@@ -12,7 +12,7 @@ use std::hash::{Hash, Hasher};
 /// ```
 /// use bittle::FixedSet;
 ///
-/// let mut set = FixedSet::<u128>::empty();
+/// let mut set = FixedSet::<u128>::new();
 ///
 /// assert!(!set.test(1));
 /// set.set(1);
@@ -26,7 +26,7 @@ use std::hash::{Hash, Hasher};
 /// ```
 /// use bittle::FixedSet;
 ///
-/// let mut set = FixedSet::<[u64; 16]>::empty();
+/// let mut set = FixedSet::<[u64; 16]>::new();
 ///
 /// assert!(!set.test(172));
 /// set.set(172);
@@ -40,8 +40,8 @@ use std::hash::{Hash, Hasher};
 /// ```
 /// use bittle::FixedSet;
 ///
-/// let mut a = FixedSet::<[u64; 2]>::empty();
-/// let mut b = FixedSet::<u128>::empty();
+/// let mut a = FixedSet::<[u64; 2]>::new();
+/// let mut b = FixedSet::<u128>::new();
 ///
 /// a.set(111);
 /// assert!(!a.iter().eq(b.iter()));
@@ -62,6 +62,22 @@ impl<T> FixedSet<T>
 where
     T: Bits,
 {
+    /// Construct a new bit set that is empty, where no element is set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::FixedSet;
+    ///
+    /// let set = FixedSet::<u128>::new();
+    ///
+    /// assert_eq!(set.iter().collect::<Vec<_>>(), vec![])
+    /// ```
+    #[inline]
+    pub fn new() -> Self {
+        Self { bits: T::EMPTY }
+    }
+
     /// Construct a set from its underlying bits.
     ///
     /// # Examples
@@ -77,13 +93,15 @@ where
     /// assert!(!set.test(2));
     /// assert!(set.test(3));
     /// ```
+    #[inline]
     pub const fn from_bits(bits: T) -> Self {
         Self { bits }
     }
 
-    /// Construct a bit set from an array.
-    pub fn from_array<const N: usize>(items: [usize; N]) -> Self {
-        let mut set = Self::empty();
+    /// Construct a bitset from a collection of indexes.
+    #[inline]
+    pub fn from_indexes<const N: usize>(items: [u32; N]) -> Self {
+        let mut set = Self::new();
 
         for n in items {
             set.set(n);
@@ -99,11 +117,12 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut set = FixedSet::<u128>::empty();
+    /// let mut set = FixedSet::<u128>::new();
     /// assert!(set.is_empty());
     /// set.set(4);
     /// assert!(!set.is_empty());
     /// ```
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.bits == T::EMPTY
     }
@@ -120,23 +139,9 @@ where
     /// set.unset(4);
     /// assert!(!set.is_full());
     /// ```
+    #[inline]
     pub fn is_full(&self) -> bool {
         self.bits == T::FULL
-    }
-
-    /// Construct a new bit set that is empty, where no element is set.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::FixedSet;
-    ///
-    /// let set = FixedSet::<u128>::empty();
-    ///
-    /// assert_eq!(set.iter().collect::<Vec<_>>(), vec![])
-    /// ```
-    pub fn empty() -> Self {
-        Self { bits: T::EMPTY }
     }
 
     /// Construct a new bit set that is full, where every single element
@@ -149,8 +154,9 @@ where
     ///
     /// let set = FixedSet::<u128>::full();
     ///
-    /// assert_eq!(set.iter().collect::<Vec<_>>(), (0..128usize).collect::<Vec<_>>())
+    /// assert_eq!(set.iter().collect::<Vec<_>>(), (0..128u32).collect::<Vec<_>>())
     /// ```
+    #[inline]
     pub fn full() -> Self {
         Self { bits: T::FULL }
     }
@@ -187,7 +193,8 @@ where
     /// assert!(!set.test(1));
     /// assert!(set.test(127));
     /// ```
-    pub fn test(&self, index: usize) -> bool {
+    #[inline]
+    pub fn test(&self, index: u32) -> bool {
         self.bits.test(index)
     }
 
@@ -198,11 +205,11 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut set = FixedSet::<u8>::empty();
+    /// let mut set = FixedSet::<u8>::new();
     /// set.set(1024);
     /// assert!(set.is_empty());
     ///
-    /// let mut set = FixedSet::<[u8; 24]>::empty();
+    /// let mut set = FixedSet::<[u8; 24]>::new();
     /// set.set(1024);
     /// assert!(set.is_empty());
     /// ```
@@ -230,7 +237,8 @@ where
     /// assert!(set.test(1));
     /// assert!(set.test(127));
     /// ```
-    pub fn set(&mut self, index: usize) {
+    #[inline]
+    pub fn set(&mut self, index: u32) {
         self.bits.set(index);
     }
 
@@ -273,7 +281,8 @@ where
     /// assert!(set.test(1));
     /// assert!(set.test(127));
     /// ```
-    pub fn unset(&mut self, index: usize) {
+    #[inline]
+    pub fn unset(&mut self, index: u32) {
         self.bits.unset(index);
     }
 
@@ -302,6 +311,7 @@ where
     /// assert!(set.test(1));
     /// assert!(!set.test(127));
     /// ```
+    #[inline]
     pub fn clear(&mut self) {
         self.bits.clear();
     }
@@ -313,11 +323,11 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut a = FixedSet::<u128>::empty();
+    /// let mut a = FixedSet::<u128>::new();
     /// a.set(31);
     /// a.set(67);
     ///
-    /// let mut b = FixedSet::<u128>::empty();
+    /// let mut b = FixedSet::<u128>::new();
     /// b.set(31);
     /// b.set(62);
     ///
@@ -327,6 +337,7 @@ where
     /// assert!(a.test(62));
     /// assert!(a.test(67));
     /// ```
+    #[inline]
     pub fn union(&mut self, other: &Self) {
         self.bits.union(&other.bits);
     }
@@ -341,11 +352,11 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut a = FixedSet::<u128>::empty();
+    /// let mut a = FixedSet::<u128>::new();
     /// a.set(31);
     /// a.set(67);
     ///
-    /// let mut b = FixedSet::<u128>::empty();
+    /// let mut b = FixedSet::<u128>::new();
     /// b.set(31);
     /// b.set(62);
     ///
@@ -365,6 +376,7 @@ where
     /// assert!(!d.test(62));
     /// assert!(d.test(67));
     /// ```
+    #[inline]
     pub fn difference(&mut self, other: &Self) {
         self.bits.difference(&other.bits);
     }
@@ -379,11 +391,11 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut a = FixedSet::<u128>::empty();
+    /// let mut a = FixedSet::<u128>::new();
     /// a.set(31);
     /// a.set(67);
     ///
-    /// let mut b = FixedSet::<u128>::empty();
+    /// let mut b = FixedSet::<u128>::new();
     /// b.set(31);
     /// b.set(62);
     ///
@@ -394,6 +406,7 @@ where
     /// assert!(c.test(62));
     /// assert!(c.test(67));
     /// ```
+    #[inline]
     pub fn symmetric_difference(&mut self, other: &Self) {
         self.bits.symmetric_difference(&other.bits);
     }
@@ -405,7 +418,7 @@ where
     /// ```
     /// use bittle::FixedSet;
     ///
-    /// let mut set = FixedSet::<u128>::empty();
+    /// let mut set = FixedSet::<u128>::new();
     ///
     /// set.set(3);
     /// set.set(7);
@@ -418,7 +431,7 @@ where
     /// ```
     /// use bittle::{FixedSet, Mask};
     ///
-    /// let mut set = FixedSet::<[u32; 4]>::empty();
+    /// let mut set = FixedSet::<[u32; 4]>::new();
     ///
     /// set.set(4);
     /// set.set(63);
@@ -426,8 +439,20 @@ where
     ///
     /// assert_eq!(set.iter().collect::<Vec<_>>(), vec![4, 63, 71]);
     /// ```
+    #[inline]
     pub fn iter(&self) -> T::Iter {
         self.bits.iter()
+    }
+}
+
+impl<T> FixedSet<T>
+where
+    T: Number,
+{
+    /// Perform a fast length calculation for bitsets specialized over numerical types.
+    #[inline]
+    pub fn len(&self) -> u32 {
+        T::count_ones(self.bits)
     }
 }
 
@@ -435,6 +460,7 @@ impl<T> fmt::Debug for FixedSet<T>
 where
     T: Bits,
 {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
@@ -444,6 +470,7 @@ impl<T> cmp::PartialEq for FixedSet<T>
 where
     T: Bits,
 {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         self.bits.eq(&other.bits)
     }
@@ -455,6 +482,7 @@ impl<T> cmp::PartialOrd for FixedSet<T>
 where
     T: Bits,
 {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
         self.bits.partial_cmp(&other.bits)
     }
@@ -464,6 +492,7 @@ impl<T> cmp::Ord for FixedSet<T>
 where
     T: Bits,
 {
+    #[inline]
     fn cmp(&self, other: &Self) -> cmp::Ordering {
         self.bits.cmp(&other.bits)
     }
@@ -473,6 +502,7 @@ impl<T> Hash for FixedSet<T>
 where
     T: Bits,
 {
+    #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.bits.hash(state);
     }
@@ -485,6 +515,7 @@ where
     type IntoIter = T::Iter;
     type Item = <Self::IntoIter as Iterator>::Item;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -504,8 +535,9 @@ impl<T> Iterator for Iter<T>
 where
     T: Bits + Number,
 {
-    type Item = usize;
+    type Item = u32;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         if self.bits == T::EMPTY {
             return None;
@@ -531,14 +563,15 @@ impl<T, const N: usize> Iterator for ArrayIter<T, N>
 where
     T: Bits + Number,
 {
-    type Item = usize;
+    type Item = u32;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(bits) = self.bits.get_mut(self.o) {
             if *bits != T::EMPTY {
                 let index = bits.trailing_zeros();
                 bits.unset(index);
-                return Some(self.o * T::BITS + index);
+                return Some(self.o as u32 * T::BITS + index);
             }
 
             self.o += 1;
@@ -553,10 +586,13 @@ where
 /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
 pub trait Number: Bits {
     /// How many bits there are in this number.
-    const BITS: usize = std::mem::size_of::<Self>() * 8;
+    const BITS: u32 = (std::mem::size_of::<Self>() * 8) as u32;
 
     /// Number of trailing zeros.
-    fn trailing_zeros(self) -> usize;
+    fn trailing_zeros(self) -> u32;
+
+    /// Count number of ones.
+    fn count_ones(self) -> u32;
 }
 
 /// The trait for a bit pattern.
@@ -564,7 +600,7 @@ pub trait Bits: Sized + Copy + Eq + Ord + Hash {
     /// The iterator over this bit pattern.
     ///
     /// See [FixedSet::iter].
-    type Iter: Iterator<Item = usize>;
+    type Iter: Iterator<Item = u32>;
 
     /// Bit-pattern for an empty bit pattern.
     ///
@@ -579,17 +615,17 @@ pub trait Bits: Sized + Copy + Eq + Ord + Hash {
     /// Test if the given bit is set.
     ///
     /// See [FixedSet::test].
-    fn test(&self, index: usize) -> bool;
+    fn test(&self, index: u32) -> bool;
 
     /// Set the given bit in the bit pattern.
     ///
     /// See [FixedSet::set].
-    fn set(&mut self, index: usize);
+    fn set(&mut self, index: u32);
 
     /// Unset the given bit in the bit pattern.
     ///
     /// See [FixedSet::unset].
-    fn unset(&mut self, index: usize);
+    fn unset(&mut self, index: u32);
 
     /// Clear the entire bit pattern.
     ///
@@ -620,8 +656,14 @@ pub trait Bits: Sized + Copy + Eq + Ord + Hash {
 macro_rules! impl_num_bits {
     ($ty:ty) => {
         impl Number for $ty {
-            fn trailing_zeros(self) -> usize {
-                <Self>::trailing_zeros(self) as usize
+            #[inline]
+            fn trailing_zeros(self) -> u32 {
+                <Self>::trailing_zeros(self)
+            }
+
+            #[inline]
+            fn count_ones(self) -> u32 {
+                <Self>::count_ones(self)
             }
         }
 
@@ -632,8 +674,8 @@ macro_rules! impl_num_bits {
             const FULL: Self = !0;
 
             #[inline]
-            fn test(&self, index: usize) -> bool {
-                if index > <$ty>::BITS as usize {
+            fn test(&self, index: u32) -> bool {
+                if index > <$ty>::BITS {
                     return false;
                 }
 
@@ -641,8 +683,8 @@ macro_rules! impl_num_bits {
             }
 
             #[inline]
-            fn set(&mut self, index: usize) {
-                if index <= <$ty>::BITS as usize {
+            fn set(&mut self, index: u32) {
+                if index <= <$ty>::BITS {
                     *self |= 1 << index;
                 }
             }
@@ -663,8 +705,8 @@ macro_rules! impl_num_bits {
             }
 
             #[inline]
-            fn unset(&mut self, index: usize) {
-                if index <= <$ty>::BITS as usize {
+            fn unset(&mut self, index: u32) {
+                if index <= <$ty>::BITS {
                     *self &= !(1 << index);
                 }
             }
@@ -697,50 +739,58 @@ where
     const EMPTY: Self = [T::EMPTY; N];
     const FULL: Self = [T::FULL; N];
 
-    fn test(&self, index: usize) -> bool {
-        if let Some(bits) = self.get(index / T::BITS) {
+    #[inline]
+    fn test(&self, index: u32) -> bool {
+        if let Some(bits) = self.get((index / T::BITS) as usize) {
             return bits.test(index % T::BITS);
         }
 
         false
     }
 
-    fn set(&mut self, index: usize) {
-        if let Some(bits) = self.get_mut(index / T::BITS) {
+    #[inline]
+    fn set(&mut self, index: u32) {
+        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
             bits.set(index % T::BITS);
         }
     }
 
+    #[inline]
     fn union(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
             o.union(i);
         }
     }
 
+    #[inline]
     fn difference(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
             o.difference(i);
         }
     }
 
+    #[inline]
     fn symmetric_difference(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
             o.symmetric_difference(i);
         }
     }
 
-    fn unset(&mut self, index: usize) {
-        if let Some(bits) = self.get_mut(index / T::BITS) {
+    #[inline]
+    fn unset(&mut self, index: u32) {
+        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
             bits.unset(index % T::BITS);
         }
     }
 
+    #[inline]
     fn clear(&mut self) {
         for b in self {
             b.clear();
         }
     }
 
+    #[inline]
     fn iter(self) -> Self::Iter {
         ArrayIter { bits: self, o: 0 }
     }
@@ -753,7 +803,7 @@ where
     type Iter = T::Iter;
 
     #[inline]
-    fn test(&self, index: usize) -> bool {
+    fn test(&self, index: u32) -> bool {
         <FixedSet<T>>::test(self, index)
     }
 

@@ -1,4 +1,5 @@
 use crate::mask::Mask;
+
 /// A mask where every element is set.
 #[derive(Default, Debug, Clone, Copy)]
 pub struct All(());
@@ -6,7 +7,7 @@ pub struct All(());
 impl Mask for All {
     type Iter = Iter;
 
-    fn test(&self, _: usize) -> bool {
+    fn test(&self, _: u32) -> bool {
         true
     }
 
@@ -17,12 +18,13 @@ impl Mask for All {
 
 /// The iterator for the [All] mask. Yields every possible index in order.
 pub struct Iter {
-    index: usize,
+    index: u32,
 }
 
 impl Iterator for Iter {
-    type Item = usize;
+    type Item = u32;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let index = self.index;
         self.index += 1;

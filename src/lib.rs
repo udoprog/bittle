@@ -15,7 +15,7 @@
 //!
 //! use bittle::FixedSet;
 //!
-//! let mut set = FixedSet::<u64>::empty();
+//! let mut set = FixedSet::<u64>::new();
 //!
 //! assert!(!set.test(31));
 //! set.set(31);
@@ -34,7 +34,7 @@
 //! use bittle::{FixedSet, Mask};
 //!
 //! let elements = vec![10, 48, 101];
-//! let mut m = FixedSet::<u128>::empty();
+//! let mut m = FixedSet::<u128>::new();
 //!
 //! // Since set is empty, no elements are iterated over.
 //! let mut it = m.join(&elements);
@@ -53,6 +53,9 @@
 
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
+
+// This library makes hard assumptions on u32 <= usize.
+const _: () = assert!(core::mem::size_of::<u32>() <= core::mem::size_of::<usize>());
 
 #[macro_use]
 mod macros;
@@ -73,8 +76,9 @@ pub use self::fixed_set::{Bits, FixedSet, Number};
 /// let n = bittle::all();
 ///
 /// assert!(n.test(0));
-/// assert!(n.test(usize::MAX));
+/// assert!(n.test(u32::MAX));
 /// ```
+#[inline]
 pub fn all() -> self::mask::All {
     self::mask::all::All::default()
 }
@@ -89,8 +93,9 @@ pub fn all() -> self::mask::All {
 /// let n = bittle::none();
 ///
 /// assert!(!n.test(0));
-/// assert!(!n.test(usize::MAX));
+/// assert!(!n.test(u32::MAX));
 /// ```
+#[inline]
 pub fn none() -> self::mask::None {
     self::mask::none::None::default()
 }
