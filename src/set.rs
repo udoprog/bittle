@@ -168,9 +168,16 @@ where
     }
 
     #[inline]
-    fn with(self, bit: u32) -> Self {
+    fn with_bit(self, bit: u32) -> Self {
         Self {
-            bits: self.bits.with(bit),
+            bits: self.bits.with_bit(bit),
+        }
+    }
+
+    #[inline]
+    fn without_bit(self, bit: u32) -> Self {
+        Self {
+            bits: self.bits.without_bit(bit),
         }
     }
 

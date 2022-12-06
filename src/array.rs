@@ -25,9 +25,18 @@ where
     }
 
     #[inline]
-    fn with(mut self, bit: u32) -> Self {
+    fn with_bit(mut self, bit: u32) -> Self {
         if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
             bits.bit_set(bit % T::BITS);
+        }
+
+        self
+    }
+
+    #[inline]
+    fn without_bit(mut self, bit: u32) -> Self {
+        if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
+            bits.bit_clear(bit % T::BITS);
         }
 
         self

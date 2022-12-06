@@ -117,9 +117,15 @@ macro_rules! number {
             }
 
             #[inline]
-            fn with(self, bit: u32) -> Self {
+            fn with_bit(self, bit: u32) -> Self {
                 const ONE: $ty = 1;
                 self | ONE.wrapping_shl(bit)
+            }
+
+            #[inline]
+            fn without_bit(self, bit: u32) -> Self {
+                const ONE: $ty = 1;
+                self & !ONE.wrapping_shl(bit)
             }
 
             #[inline]

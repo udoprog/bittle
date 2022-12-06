@@ -547,10 +547,40 @@ pub trait OwnedBits: Bits {
     /// ```
     /// use bittle::{Bits, OwnedBits};
     ///
-    /// let set = u128::zeros().with(8).with(12);
+    /// let set = u128::zeros().with_bit(8).with_bit(12);
     /// assert!(set.iter_ones().eq([8, 12]))
     /// ```
-    fn with(self, bit: u32) -> Self;
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let set = <[u32; 4]>::zeros().with_bit(8).with_bit(12);
+    /// assert!(set.iter_ones().eq([8, 12]))
+    /// ```
+    fn with_bit(self, bit: u32) -> Self;
+
+    /// Set the given bit and return the modified set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let set = u8::ones().without_bit(2);
+    /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// ```
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let set = <[u8; 2]>::ones().without_bit(2).without_bit(10);
+    /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// ```
+    fn without_bit(self, bit: u32) -> Self;
 
     /// Construct the union between this and another set.
     ///
