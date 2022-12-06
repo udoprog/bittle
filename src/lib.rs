@@ -39,7 +39,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bittle = "0.3.2"
+//! bittle = "0.3.3"
 //! ```
 //!
 //! <br>
@@ -108,13 +108,3 @@ pub use self::set::Set;
 
 mod bits;
 pub use self::bits::{Bits, OwnedBits};
-
-#[allow(missing_docs)]
-pub fn with_bittle() -> u32 {
-    crate::set![4, 8]
-}
-
-#[allow(missing_docs)]
-pub fn without_bittle() -> u32 {
-    1 << 4 | 1 << 8
-}

@@ -163,7 +163,7 @@ number!(i64);
 number!(u128);
 number!(i128);
 
-/// An iterator over the bits of a primitive number.
+/// An iterator over the ones in a primitive number.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct IterOnes<T>

@@ -167,7 +167,7 @@ where
     }
 }
 
-/// An iterator over the bits of an array acting as a bit set.
+/// An owned iterator over the bits set to ones in an array.
 #[derive(Clone)]
 pub struct IntoIterOnes<T, const N: usize> {
     iter: core::array::IntoIter<T, N>,

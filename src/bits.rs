@@ -501,7 +501,7 @@ pub trait OwnedBits: Bits {
 
     /// Bit-pattern for an empty bit pattern.
     ///
-    /// See [OwnedBits::empty].
+    /// See [OwnedBits::zeros].
     const ZEROS: Self;
 
     /// Bit-pattern for a full bit pattern.

@@ -94,7 +94,7 @@ where
     }
 }
 
-/// A borrowing iterator over the bits of a `[T; N]`.
+/// A borrowing iterator over the bits set to ones in a slice.
 #[derive(Clone)]
 pub struct IterOnes<'a, T> {
     iter: core::slice::Iter<'a, T>,
@@ -129,37 +129,6 @@ where
             }
 
             self.current = Some((*self.iter.next()?, *offset + T::BITS));
-        }
-    }
-}
-
-/// An iterator over the bits of an array acting as a bit set.
-#[derive(Clone)]
-pub struct IntoIterOnes<T, const N: usize> {
-    iter: core::array::IntoIter<T, N>,
-    current: Option<(T, u32)>,
-}
-
-impl<T, const N: usize> Iterator for IntoIterOnes<T, N>
-where
-    T: OwnedBits + Number,
-{
-    type Item = u32;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let Some((bits, offset)) = &mut self.current else {
-                return None;
-            };
-
-            if !bits.is_zeros() {
-                let index = bits.trailing_zeros();
-                bits.bit_clear(index);
-                return Some(*offset + index);
-            }
-
-            self.current = Some((self.iter.next()?, *offset + T::BITS));
         }
     }
 }
