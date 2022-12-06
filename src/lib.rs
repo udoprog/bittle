@@ -39,7 +39,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bittle = "0.3.4"
+//! bittle = "0.3.5"
 //! ```
 //!
 //! <br>

@@ -1,6 +1,6 @@
 [package]
 name = "bittle"
-version = "0.3.4"
+version = "0.3.5"
 authors = ["John-John Tedro <udoprog@tedro.se>"]
 edition = "2018"
 rust-version = "1.65.0"
@@ -10,5 +10,5 @@ readme = "README.md"
 homepage = "https://github.com/udoprog/bittle"
 repository = "https://github.com/udoprog/bittle"
 license = "MIT/Apache-2.0"
-keywords = ["Bits", "bitvec", "container", "data-structure", "no_std"]
+keywords = ["bits", "bitvec", "container", "data-structure", "no_std"]
 categories = ["data-structures"]
