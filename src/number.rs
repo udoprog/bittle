@@ -31,6 +31,16 @@ macro_rules! number {
             type IterBits<'a> = IterBits<Self> where Self: 'a;
 
             #[inline]
+            fn len(&self) -> u32 {
+                <$ty>::count_ones(*self)
+            }
+
+            #[inline]
+            fn capacity(&self) -> u32 {
+                Self::BITS
+            }
+
+            #[inline]
             fn is_empty(&self) -> bool {
                 *self == Self::EMPTY
             }
@@ -42,25 +52,20 @@ macro_rules! number {
 
             #[inline]
             fn test(&self, index: u32) -> bool {
-                if index > <$ty>::BITS {
-                    return false;
-                }
-
-                (*self & (1 << index)) != 0
+                const ONE: $ty = 1;
+                (*self & ONE.wrapping_shl(index)) != 0
             }
 
             #[inline]
             fn set(&mut self, index: u32) {
-                if index <= <$ty>::BITS {
-                    *self |= 1 << index;
-                }
+                const ONE: $ty = 1;
+                *self |= ONE.wrapping_shl(index);
             }
 
             #[inline]
             fn unset(&mut self, index: u32) {
-                if index <= <$ty>::BITS {
-                    *self &= !(1 << index);
-                }
+                const ONE: $ty = 1;
+                *self &= !ONE.wrapping_shl(index);
             }
 
             #[inline]
@@ -109,6 +114,12 @@ macro_rules! number {
             #[inline]
             fn full() -> Self {
                 Self::FULL
+            }
+
+            #[inline]
+            fn with(self, bit: u32) -> Self {
+                const ONE: $ty = 1;
+                self | ONE.wrapping_shl(bit)
             }
 
             #[inline]

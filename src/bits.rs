@@ -18,6 +18,52 @@ pub trait Bits {
     where
         Self: 'a;
 
+    /// Get the length of the bit set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut set = 0u128;
+    /// assert_eq!(set.len(), 0);
+    /// set.set(4);
+    /// assert_eq!(set.len(), 1);
+    /// ```
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut set = [0u128, 0];
+    /// assert_eq!(set.len(), 0);
+    /// set.set(240);
+    /// assert_eq!(set.len(), 1);
+    /// ```
+    fn len(&self) -> u32;
+
+    /// Get the capacity of the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut set = 0u128;
+    /// assert_eq!(set.capacity(), 128);
+    /// ```
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut set = [0u128, 0];
+    /// assert_eq!(set.capacity(), 256);
+    /// ```
+    fn capacity(&self) -> u32;
+
     /// Test if this set is empty.
     ///
     /// # Examples
@@ -28,6 +74,17 @@ pub trait Bits {
     /// let mut set = 0u128;
     /// assert!(set.is_empty());
     /// set.set(4);
+    /// assert!(!set.is_empty());
+    /// ```
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut set = [0u128; 2];
+    /// assert!(set.is_empty());
+    /// set.set(250);
     /// assert!(!set.is_empty());
     /// ```
     fn is_empty(&self) -> bool;
@@ -48,17 +105,17 @@ pub trait Bits {
 
     /// Test if the given bit is set.
     ///
-    /// Elements which are out of bounds of the bit set will always return
-    /// `false`.
+    /// Indexes which are out of bounds will wrap around in the bitset.
     ///
     /// ```
     /// use bittle::{Bits, OwnedBits};
     ///
-    /// let mut set = u8::full();
-    /// assert!(!set.test(1024));
-    ///
-    /// let mut set = <[u8; 24]>::full();
-    /// assert!(!set.test(1024));
+    /// let mut set = 0u32;
+    /// assert!(!set.test(32));
+    /// set.set(0);
+    /// assert!(set.test(32));
+    /// set.unset(32);
+    /// assert!(!set.test(0));
     /// ```
     ///
     /// # Examples
@@ -82,18 +139,17 @@ pub trait Bits {
 
     /// Set the given bit.
     ///
-    /// Setting a bit which is out of bounds does nothing.
+    /// Indexes which are out of bounds will wrap around in the bitset.
     ///
     /// ```
-    /// use bittle::Bits;
+    /// use bittle::{Bits, OwnedBits};
     ///
-    /// let mut set = 0u8;
-    /// set.set(1024);
-    /// assert!(set.is_empty());
-    ///
-    /// let mut set = [0u8; 24];
-    /// set.set(1024);
-    /// assert!(set.is_empty());
+    /// let mut set = 0u32;
+    /// assert!(!set.test(32));
+    /// set.set(0);
+    /// assert!(set.test(32));
+    /// set.unset(32);
+    /// assert!(!set.test(0));
     /// ```
     ///
     /// # Examples
@@ -123,18 +179,17 @@ pub trait Bits {
 
     /// Unset the given bit.
     ///
-    /// Unsetting a bit which is out of bounds does nothing.
+    /// Indexes which are out of bounds will wrap around in the bitset.
     ///
     /// ```
     /// use bittle::{Bits, OwnedBits};
     ///
-    /// let mut set = u8::full();
-    /// set.unset(1024);
-    /// assert!(set.is_full());
-    ///
-    /// let mut set = <[u8; 24]>::full();
-    /// set.unset(1024);
-    /// assert!(set.is_full());
+    /// let mut set = 0u32;
+    /// assert!(!set.test(32));
+    /// set.set(0);
+    /// assert!(set.test(32));
+    /// set.unset(32);
+    /// assert!(!set.test(0));
     /// ```
     ///
     /// # Examples
@@ -469,6 +524,18 @@ pub trait OwnedBits: Bits {
     /// assert!(set.iter_bits().eq(0..128))
     /// ```
     fn full() -> Self;
+
+    /// Set the given bit and return the modified set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let set = u128::empty().with(8).with(12);
+    /// assert!(set.iter_bits().eq([8, 12]))
+    /// ```
+    fn with(self, bit: u32) -> Self;
 
     /// Construct the union between this and another set.
     ///

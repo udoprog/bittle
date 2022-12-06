@@ -11,6 +11,16 @@ where
     type IterBits<'a> = IterBits<'a, T> where Self: 'a;
 
     #[inline]
+    fn len(&self) -> u32 {
+        self.iter().map(|b| b.len()).sum()
+    }
+
+    #[inline]
+    fn capacity(&self) -> u32 {
+        Bits::len(self).saturating_mul(T::BITS)
+    }
+
+    #[inline]
     fn is_empty(&self) -> bool {
         self.iter().all(|b| b.is_empty())
     }

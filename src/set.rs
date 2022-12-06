@@ -139,6 +139,13 @@ where
     }
 
     #[inline]
+    fn with(self, bit: u32) -> Self {
+        Self {
+            bits: self.bits.with(bit),
+        }
+    }
+
+    #[inline]
     fn union(self, other: Self) -> Self {
         Self {
             bits: self.bits.union(other.bits),
@@ -179,6 +186,16 @@ where
     type IterBits<'a> = T::IterBits<'a>
         where
             Self: 'a;
+
+    #[inline]
+    fn len(&self) -> u32 {
+        self.bits.len()
+    }
+
+    #[inline]
+    fn capacity(&self) -> u32 {
+        self.bits.capacity()
+    }
 
     #[inline]
     fn is_full(&self) -> bool {

@@ -25,6 +25,15 @@ where
     }
 
     #[inline]
+    fn with(mut self, bit: u32) -> Self {
+        if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
+            bits.set(bit % T::BITS);
+        }
+
+        self
+    }
+
+    #[inline]
     fn union(mut self, other: Self) -> Self {
         for (o, i) in self.iter_mut().zip(other) {
             o.union_assign(&i);
@@ -73,6 +82,16 @@ where
     T: Eq + OwnedBits + Number,
 {
     type IterBits<'a> = IterBits<'a, T> where Self: 'a;
+
+    #[inline]
+    fn len(&self) -> u32 {
+        self.iter().map(Bits::len).sum()
+    }
+
+    #[inline]
+    fn capacity(&self) -> u32 {
+        T::BITS.saturating_mul(N as u32)
+    }
 
     #[inline]
     fn is_empty(&self) -> bool {
