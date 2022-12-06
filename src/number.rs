@@ -1,21 +1,11 @@
 //! [Bits] implementation and associated types for numbers.
 
-use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
-
 use crate::bits::{Bits, OwnedBits};
 
 /// Basic numerical trait for the plumbing of a bit set. This ensures that only
 /// primitive types can be used as the basis of a bit set backed by an array,
 /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
-pub trait Number:
-    Copy
-    + Eq
-    + BitOr<Self, Output = Self>
-    + BitOrAssign<Self>
-    + BitAnd<Self, Output = Self>
-    + BitAndAssign
-    + OwnedBits
-{
+pub trait Number: Copy {
     /// Number of trailing zeros.
     fn trailing_zeros(self) -> u32;
 
@@ -38,7 +28,7 @@ macro_rules! number {
         }
 
         impl Bits for $ty {
-            type BitsIter<'a> = BitsIter<Self> where Self: 'a;
+            type IterBits<'a> = IterBits<Self> where Self: 'a;
 
             #[inline]
             fn is_empty(&self) -> bool {
@@ -67,25 +57,30 @@ macro_rules! number {
             }
 
             #[inline]
-            fn union(&mut self, other: &Self) {
-                *self |= other;
-            }
-
-            #[inline]
-            fn difference(&mut self, other: &Self) {
-                *self = other & !*self;
-            }
-
-            #[inline]
-            fn symmetric_difference(&mut self, other: &Self) {
-                *self ^= other;
-            }
-
-            #[inline]
             fn unset(&mut self, index: u32) {
                 if index <= <$ty>::BITS {
                     *self &= !(1 << index);
                 }
+            }
+
+            #[inline]
+            fn union_assign(&mut self, other: &Self) {
+                *self |= other;
+            }
+
+            #[inline]
+            fn conjunction_assign(&mut self, other: &Self) {
+                *self &= other;
+            }
+
+            #[inline]
+            fn difference_assign(&mut self, other: &Self) {
+                *self = other & !*self;
+            }
+
+            #[inline]
+            fn symmetric_difference_assign(&mut self, other: &Self) {
+                *self ^= other;
             }
 
             #[inline]
@@ -94,8 +89,8 @@ macro_rules! number {
             }
 
             #[inline]
-            fn bits(&self) -> Self::BitsIter<'_> {
-                BitsIter { bits: *self }
+            fn iter_bits(&self) -> Self::IterBits<'_> {
+                IterBits { bits: *self }
             }
         }
 
@@ -104,7 +99,7 @@ macro_rules! number {
             const EMPTY: Self = 0;
             const FULL: Self = !0;
 
-            type IntoBitsIter = BitsIter<Self>;
+            type IntoBits = IterBits<Self>;
 
             #[inline]
             fn empty() -> Self {
@@ -117,8 +112,28 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_bits(self) -> Self::IntoBitsIter {
-                BitsIter { bits: self }
+            fn union(self, other: Self) -> Self {
+                self | other
+            }
+
+            #[inline]
+            fn conjunction(self, other: Self) -> Self {
+                self & other
+            }
+
+            #[inline]
+            fn difference(self, other: Self) -> Self {
+                !self & other
+            }
+
+            #[inline]
+            fn symmetric_difference(self, other: Self) -> Self {
+                self ^ other
+            }
+
+            #[inline]
+            fn into_bits(self) -> Self::IntoBits {
+                IterBits { bits: self }
             }
         }
     };
@@ -140,14 +155,14 @@ number!(i128);
 /// An iterator over the bits of a primitive number.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct BitsIter<T>
+pub struct IterBits<T>
 where
     T: Number,
 {
     bits: T,
 }
 
-impl<T> Iterator for BitsIter<T>
+impl<T> Iterator for IterBits<T>
 where
     T: OwnedBits + Number,
 {

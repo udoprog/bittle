@@ -14,7 +14,7 @@ pub trait Bits {
     /// The iterator over this bit pattern.
     ///
     /// See [Bits::bits].
-    type BitsIter<'a>: Iterator<Item = u32>
+    type IterBits<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
@@ -189,64 +189,111 @@ pub trait Bits {
     /// ```
     fn clear(&mut self);
 
-    /// Construct the union between this and another set.
+    /// Modify the current set in place so that it becomes a union of this and
+    /// another set.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut a = 0u128;
-    /// a.set(31);
-    /// a.set(67);
+    /// let mut a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
     ///
-    /// let mut b = 0u128;
-    /// b.set(31);
-    /// b.set(62);
+    /// a.conjunction_assign(&b);
     ///
-    /// a.union(&b);
-    ///
-    /// assert!(a.test(31));
-    /// assert!(a.test(62));
-    /// assert!(a.test(67));
+    /// assert!(a.iter_bits().eq([31]));
     /// ```
-    fn union(&mut self, other: &Self);
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// a.conjunction_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([31]));
+    /// ```
+    fn conjunction_assign(&mut self, other: &Self);
+
+    /// Modify the current set in place so that it becomes a union of this and
+    /// another set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// a.union_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([31, 62, 67]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// a.union_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([31, 62, 67]));
+    /// ```
+    fn union_assign(&mut self, other: &Self);
 
     /// Construct the difference between this and another set.
     ///
-    /// The empty set will contain elements which are exlusively contained in the
-    /// second set. This is not a commutative operation.
+    /// This assigns the elements in the second set which are not part of the
+    /// first.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut a = 0u128;
-    /// a.set(31);
-    /// a.set(67);
-    ///
-    /// let mut b = 0u128;
-    /// b.set(31);
-    /// b.set(62);
+    /// let a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
     ///
     /// let mut c = a;
-    /// c.difference(&b);
+    /// c.difference_assign(&b);
     ///
     /// let mut d = b;
-    /// d.difference(&a);
+    /// d.difference_assign(&a);
     ///
     /// assert_ne!(c, d);
     ///
-    /// assert!(!c.test(31));
-    /// assert!(c.test(62));
-    /// assert!(!c.test(67));
-    ///
-    /// assert!(!d.test(31));
-    /// assert!(!d.test(62));
-    /// assert!(d.test(67));
+    /// assert!(c.iter_bits().eq([62]));
+    /// assert!(d.iter_bits().eq([67]));
     /// ```
-    fn difference(&mut self, other: &Self);
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// let mut c = a;
+    /// c.difference_assign(&b);
+    ///
+    /// let mut d = b;
+    /// d.difference_assign(&a);
+    ///
+    /// assert_ne!(c, d);
+    ///
+    /// assert!(c.iter_bits().eq([62]));
+    /// assert!(d.iter_bits().eq([67]));
+    /// ```
+    fn difference_assign(&mut self, other: &Self);
 
     /// Construct the symmetric difference between this and another set.
     ///
@@ -258,22 +305,27 @@ pub trait Bits {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut a = 0u128;
-    /// a.set(31);
-    /// a.set(67);
+    /// let mut a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
     ///
-    /// let mut b = 0u128;
-    /// b.set(31);
-    /// b.set(62);
+    /// a.symmetric_difference_assign(&b);
     ///
-    /// let mut c = a;
-    /// c.symmetric_difference(&b);
-    ///
-    /// assert!(!c.test(31));
-    /// assert!(c.test(62));
-    /// assert!(c.test(67));
+    /// assert!(a.iter_bits().eq([62, 67]));
     /// ```
-    fn symmetric_difference(&mut self, other: &Self);
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// a.symmetric_difference_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([62, 67]));
+    /// ```
+    fn symmetric_difference_assign(&mut self, other: &Self);
 
     /// Construct an iterator over a bit set.
     ///
@@ -282,12 +334,8 @@ pub trait Bits {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut set = 0u128;
-    ///
-    /// set.set(3);
-    /// set.set(7);
-    ///
-    /// assert_eq!(set.bits().collect::<Vec<_>>(), vec![3, 7]);
+    /// let set: u128 = bittle::set![3, 7];
+    /// assert!(set.iter_bits().eq([3, 7]));
     /// ```
     ///
     /// A larger bit set:
@@ -295,15 +343,10 @@ pub trait Bits {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut set = [0u32; 4];
-    ///
-    /// set.set(4);
-    /// set.set(63);
-    /// set.set(71);
-    ///
-    /// assert_eq!(set.bits().collect::<Vec<_>>(), vec![4, 63, 71]);
+    /// let set: [u32; 4] = bittle::set![4, 67, 71];
+    /// assert!(set.iter_bits().eq([4, 67, 71]));
     /// ```
-    fn bits(&self) -> Self::BitsIter<'_>;
+    fn iter_bits(&self) -> Self::IterBits<'_>;
 
     /// Join this bit set with an iterator, creating an iterator that only
     /// yields the elements which are set.
@@ -322,13 +365,13 @@ pub trait Bits {
     ///
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
-    fn join<I>(&self, iter: I) -> Join<Self::BitsIter<'_>, I::IntoIter>
+    fn join<I>(&self, iter: I) -> IterJoin<Self::IterBits<'_>, I::IntoIter>
     where
         Self: Sized,
         I: IntoIterator,
     {
-        Join {
-            mask: self.bits(),
+        IterJoin {
+            mask: self.iter_bits(),
             right: iter.into_iter(),
             last: 0,
         }
@@ -377,10 +420,10 @@ pub trait Bits {
 /// let mut b = 0u128;
 ///
 /// a.set(111);
-/// assert!(!a.bits().eq(b.bits()));
+/// assert!(!a.iter_bits().eq(b.iter_bits()));
 ///
 /// b.set(111);
-/// assert!(a.bits().eq(b.bits()));
+/// assert!(a.iter_bits().eq(b.iter_bits()));
 /// ```
 pub trait OwnedBits: Bits {
     /// Full number of bits in the set.
@@ -399,7 +442,7 @@ pub trait OwnedBits: Bits {
     /// Owning iterator over bits.
     ///
     /// See [OwnedBits::into_bits].
-    type IntoBitsIter: Iterator<Item = u32>;
+    type IntoBits: Iterator<Item = u32>;
 
     /// Construct a empty bit set that is empty, where no element is set.
     ///
@@ -409,9 +452,8 @@ pub trait OwnedBits: Bits {
     /// use bittle::{Bits, OwnedBits};
     ///
     /// let set = 0u128;
-    ///
     /// assert!(set.is_empty());
-    /// assert_eq!(set.bits().count(), 0);
+    /// assert_eq!(set.iter_bits().count(), 0);
     /// ```
     fn empty() -> Self;
 
@@ -424,10 +466,126 @@ pub trait OwnedBits: Bits {
     /// use bittle::{Bits, OwnedBits};
     ///
     /// let set = u128::full();
-    ///
-    /// assert!(set.bits().eq(0..128))
+    /// assert!(set.iter_bits().eq(0..128))
     /// ```
     fn full() -> Self;
+
+    /// Construct the union between this and another set.
+    ///
+    /// This retains all elements from both sets.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// let c = a.union(b);
+    /// assert!(c.iter_bits().eq([31, 62, 67]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// let c = a.union(b);
+    /// assert!(c.iter_bits().eq([31, 62, 67]));
+    /// ```
+    fn union(self, other: Self) -> Self;
+
+    /// Constructs the conjunctionunction between this and another set.
+    ///
+    /// This retains elements which are common to both sets.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// let c = a.conjunction(b);
+    /// assert!(c.iter_bits().eq([31]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// let c = a.conjunction(b);
+    /// assert!(c.iter_bits().eq([31]));
+    /// ```
+    fn conjunction(self, other: Self) -> Self;
+
+    /// Construct the difference between this and another set.
+    ///
+    /// This returns the elements in the second set which are not part of the
+    /// first.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Set, Bits, OwnedBits};
+    ///
+    /// let a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// let c = a.difference(b);
+    /// assert!(c.iter_bits().eq([62]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// let c = a.difference(b);
+    /// assert!(c.iter_bits().eq([62]));
+    /// ```
+    fn difference(self, other: Self) -> Self;
+
+    /// Construct the symmetric difference between this and another set.
+    ///
+    /// This retains elements which are unique to each set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// let c = a.symmetric_difference(b);
+    /// assert!(c.iter_bits().eq([62, 67]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, OwnedBits};
+    ///
+    /// let a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// let c = a.symmetric_difference(b);
+    /// assert!(c.iter_bits().eq([62, 67]));
+    /// ```
+    fn symmetric_difference(self, other: Self) -> Self;
 
     /// Construct an owning iterator over a bit set.
     ///
@@ -457,19 +615,19 @@ pub trait OwnedBits: Bits {
     ///
     /// assert!(set.into_bits().eq([4, 63, 71]));
     /// ```
-    fn into_bits(self) -> Self::IntoBitsIter;
+    fn into_bits(self) -> Self::IntoBits;
 }
 
 /// A joined iterator.
 ///
 /// Created using [Mask::join].
-pub struct Join<A, B> {
+pub struct IterJoin<A, B> {
     mask: A,
     right: B,
     last: u32,
 }
 
-impl<A, B> Iterator for Join<A, B>
+impl<A, B> Iterator for IterJoin<A, B>
 where
     A: Iterator<Item = u32>,
     B: Iterator,

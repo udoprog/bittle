@@ -63,10 +63,10 @@ use crate::number::Number;
 /// let mut b = Set::<u128>::empty();
 ///
 /// a.set(111);
-/// assert!(!a.bits().eq(b.bits()));
+/// assert!(!a.iter_bits().eq(b.iter_bits()));
 ///
 /// b.set(111);
-/// assert!(a.bits().eq(b.bits()));
+/// assert!(a.iter_bits().eq(b.iter_bits()));
 /// ```
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -126,7 +126,7 @@ where
     const FULL: Self = Self { bits: T::FULL };
     const EMPTY: Self = Self { bits: T::EMPTY };
 
-    type IntoBitsIter = T::IntoBitsIter;
+    type IntoBits = T::IntoBits;
 
     #[inline]
     fn empty() -> Self {
@@ -139,7 +139,35 @@ where
     }
 
     #[inline]
-    fn into_bits(self) -> T::IntoBitsIter {
+    fn union(self, other: Self) -> Self {
+        Self {
+            bits: self.bits.union(other.bits),
+        }
+    }
+
+    #[inline]
+    fn conjunction(self, other: Self) -> Self {
+        Self {
+            bits: self.bits.conjunction(other.bits),
+        }
+    }
+
+    #[inline]
+    fn difference(self, other: Self) -> Self {
+        Self {
+            bits: self.bits.difference(other.bits),
+        }
+    }
+
+    #[inline]
+    fn symmetric_difference(self, other: Self) -> Self {
+        Self {
+            bits: self.bits.symmetric_difference(other.bits),
+        }
+    }
+
+    #[inline]
+    fn into_bits(self) -> T::IntoBits {
         self.bits.into_bits()
     }
 }
@@ -148,7 +176,7 @@ impl<T> Bits for Set<T>
 where
     T: Bits,
 {
-    type BitsIter<'a> = T::BitsIter<'a>
+    type IterBits<'a> = T::IterBits<'a>
         where
             Self: 'a;
 
@@ -183,23 +211,28 @@ where
     }
 
     #[inline]
-    fn union(&mut self, other: &Self) {
-        self.bits.union(&other.bits);
+    fn union_assign(&mut self, other: &Self) {
+        self.bits.union_assign(&other.bits);
     }
 
     #[inline]
-    fn difference(&mut self, other: &Self) {
-        self.bits.difference(&other.bits);
+    fn conjunction_assign(&mut self, other: &Self) {
+        self.bits.conjunction_assign(&other.bits);
     }
 
     #[inline]
-    fn symmetric_difference(&mut self, other: &Self) {
-        self.bits.symmetric_difference(&other.bits);
+    fn difference_assign(&mut self, other: &Self) {
+        self.bits.difference_assign(&other.bits);
     }
 
     #[inline]
-    fn bits(&self) -> T::BitsIter<'_> {
-        self.bits.bits()
+    fn symmetric_difference_assign(&mut self, other: &Self) {
+        self.bits.symmetric_difference_assign(&other.bits);
+    }
+
+    #[inline]
+    fn iter_bits(&self) -> T::IterBits<'_> {
+        self.bits.iter_bits()
     }
 }
 
@@ -221,7 +254,7 @@ where
 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_set().entries(self.bits()).finish()
+        f.debug_set().entries(self.iter_bits()).finish()
     }
 }
 
@@ -271,7 +304,7 @@ impl<T> IntoIterator for Set<T>
 where
     T: OwnedBits,
 {
-    type IntoIter = T::IntoBitsIter;
+    type IntoIter = T::IntoBits;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
@@ -284,18 +317,18 @@ impl<'a, T> IntoIterator for &'a Set<T>
 where
     T: OwnedBits,
 {
-    type IntoIter = T::BitsIter<'a>;
+    type IntoIter = T::IterBits<'a>;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.bits()
+        self.iter_bits()
     }
 }
 
 impl<T> BitOr for Set<T>
 where
-    T: Number,
+    T: BitOr<Output = T>,
 {
     type Output = Set<T>;
 
@@ -309,7 +342,7 @@ where
 
 impl<T> BitOrAssign for Set<T>
 where
-    T: Number,
+    T: BitOrAssign,
 {
     #[inline]
     fn bitor_assign(&mut self, rhs: Self) {
@@ -319,7 +352,7 @@ where
 
 impl<T> BitAnd for Set<T>
 where
-    T: Number,
+    T: BitAnd<Output = T>,
 {
     type Output = Set<T>;
 
@@ -333,10 +366,17 @@ where
 
 impl<T> BitAndAssign for Set<T>
 where
-    T: Number,
+    T: BitAndAssign,
 {
     #[inline]
     fn bitand_assign(&mut self, rhs: Self) {
         self.bits &= rhs.bits;
+    }
+}
+
+impl<T> From<T> for Set<T> {
+    #[inline]
+    fn from(bits: T) -> Self {
+        Set { bits }
     }
 }

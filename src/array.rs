@@ -2,17 +2,17 @@
 
 use crate::bits::{Bits, OwnedBits};
 use crate::number::Number;
-use crate::slice::BitsIter;
+use crate::slice::IterBits;
 
 impl<T, const N: usize> OwnedBits for [T; N]
 where
-    T: Number,
+    T: Eq + OwnedBits + Number,
 {
     const BITS: u32 = T::BITS * N as u32;
     const EMPTY: Self = [T::EMPTY; N];
     const FULL: Self = [T::FULL; N];
 
-    type IntoBitsIter = IntoBitsIter<T, N>;
+    type IntoBits = IntoBits<T, N>;
 
     #[inline]
     fn empty() -> Self {
@@ -25,18 +25,54 @@ where
     }
 
     #[inline]
-    fn into_bits(self) -> Self::IntoBitsIter {
+    fn union(mut self, other: Self) -> Self {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.union_assign(&i);
+        }
+
+        self
+    }
+
+    #[inline]
+    fn conjunction(mut self, other: Self) -> Self {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.conjunction_assign(&i);
+        }
+
+        self
+    }
+
+    #[inline]
+    fn difference(mut self, other: Self) -> Self {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.difference_assign(&i);
+        }
+
+        self
+    }
+
+    #[inline]
+    fn symmetric_difference(mut self, other: Self) -> Self {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.symmetric_difference_assign(&i);
+        }
+
+        self
+    }
+
+    #[inline]
+    fn into_bits(self) -> Self::IntoBits {
         let mut iter = IntoIterator::into_iter(self);
         let current = iter.next().map(|v| (v, 0));
-        IntoBitsIter { iter, current }
+        IntoBits { iter, current }
     }
 }
 
 impl<T, const N: usize> Bits for [T; N]
 where
-    T: Number,
+    T: Eq + OwnedBits + Number,
 {
-    type BitsIter<'a> = BitsIter<'a, T> where Self: 'a;
+    type IterBits<'a> = IterBits<'a, T> where Self: 'a;
 
     #[inline]
     fn is_empty(&self) -> bool {
@@ -65,23 +101,30 @@ where
     }
 
     #[inline]
-    fn union(&mut self, other: &Self) {
+    fn union_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.union(i);
+            o.union_assign(i);
         }
     }
 
     #[inline]
-    fn difference(&mut self, other: &Self) {
+    fn conjunction_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.difference(i);
+            o.conjunction_assign(i);
         }
     }
 
     #[inline]
-    fn symmetric_difference(&mut self, other: &Self) {
+    fn difference_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.symmetric_difference(i);
+            o.difference_assign(i);
+        }
+    }
+
+    #[inline]
+    fn symmetric_difference_assign(&mut self, other: &Self) {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.symmetric_difference_assign(i);
         }
     }
 
@@ -100,24 +143,21 @@ where
     }
 
     #[inline]
-    fn bits(&self) -> Self::BitsIter<'_> {
-        BitsIter::new(IntoIterator::into_iter(self))
+    fn iter_bits(&self) -> Self::IterBits<'_> {
+        IterBits::new(IntoIterator::into_iter(self))
     }
 }
 
 /// An iterator over the bits of an array acting as a bit set.
 #[derive(Clone)]
-pub struct IntoBitsIter<T, const N: usize>
-where
-    T: Number,
-{
+pub struct IntoBits<T, const N: usize> {
     iter: core::array::IntoIter<T, N>,
     current: Option<(T, u32)>,
 }
 
-impl<T, const N: usize> Iterator for IntoBitsIter<T, N>
+impl<T, const N: usize> Iterator for IntoBits<T, N>
 where
-    T: Number,
+    T: OwnedBits + Number,
 {
     type Item = u32;
 
@@ -129,7 +169,7 @@ where
             };
 
             if !bits.is_empty() {
-                let index = bits.trailing_zeros();
+                let index = T::trailing_zeros(*bits);
                 bits.unset(index);
                 return Some(*offset + index);
             }

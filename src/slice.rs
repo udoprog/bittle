@@ -2,12 +2,13 @@
 
 use crate::bits::Bits;
 use crate::number::Number;
+use crate::OwnedBits;
 
 impl<T> Bits for [T]
 where
-    T: Number,
+    T: OwnedBits + Number,
 {
-    type BitsIter<'a> = BitsIter<'a, T> where Self: 'a;
+    type IterBits<'a> = IterBits<'a, T> where Self: 'a;
 
     #[inline]
     fn is_empty(&self) -> bool {
@@ -36,23 +37,30 @@ where
     }
 
     #[inline]
-    fn union(&mut self, other: &Self) {
+    fn union_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.union(i);
+            o.union_assign(i);
         }
     }
 
     #[inline]
-    fn difference(&mut self, other: &Self) {
+    fn conjunction_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.difference(i);
+            o.conjunction_assign(i);
         }
     }
 
     #[inline]
-    fn symmetric_difference(&mut self, other: &Self) {
+    fn difference_assign(&mut self, other: &Self) {
         for (o, i) in self.iter_mut().zip(other) {
-            o.symmetric_difference(i);
+            o.difference_assign(i);
+        }
+    }
+
+    #[inline]
+    fn symmetric_difference_assign(&mut self, other: &Self) {
+        for (o, i) in self.iter_mut().zip(other) {
+            o.symmetric_difference_assign(i);
         }
     }
 
@@ -71,24 +79,21 @@ where
     }
 
     #[inline]
-    fn bits(&self) -> Self::BitsIter<'_> {
-        BitsIter::new(IntoIterator::into_iter(self))
+    fn iter_bits(&self) -> Self::IterBits<'_> {
+        IterBits::new(IntoIterator::into_iter(self))
     }
 }
 
 /// A borrowing iterator over the bits of a `[T; N]`.
 #[derive(Clone)]
-pub struct BitsIter<'a, T>
-where
-    T: Number,
-{
+pub struct IterBits<'a, T> {
     iter: core::slice::Iter<'a, T>,
     current: Option<(T, u32)>,
 }
 
-impl<'a, T> BitsIter<'a, T>
+impl<'a, T> IterBits<'a, T>
 where
-    T: Number,
+    T: Copy,
 {
     pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
         let current = iter.next().map(|v| (*v, 0));
@@ -96,9 +101,9 @@ where
     }
 }
 
-impl<'a, T> Iterator for BitsIter<'a, T>
+impl<'a, T> Iterator for IterBits<'a, T>
 where
-    T: Number,
+    T: OwnedBits + Number,
 {
     type Item = u32;
 
@@ -120,17 +125,14 @@ where
 
 /// An iterator over the bits of an array acting as a bit set.
 #[derive(Clone)]
-pub struct IntoBitsIter<T, const N: usize>
-where
-    T: Number,
-{
+pub struct IntoBits<T, const N: usize> {
     iter: core::array::IntoIter<T, N>,
     current: Option<(T, u32)>,
 }
 
-impl<T, const N: usize> Iterator for IntoBitsIter<T, N>
+impl<T, const N: usize> Iterator for IntoBits<T, N>
 where
-    T: Number,
+    T: OwnedBits + Number,
 {
     type Item = u32;
 
