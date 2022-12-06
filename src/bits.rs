@@ -1,4 +1,4 @@
-//! A fixed size bit set.
+//! Traits which define the behaviors of a bit set.
 
 /// Bitset operations.
 ///
@@ -247,35 +247,10 @@ pub trait Bits {
     /// Modify the current set in place so that it becomes a union of this and
     /// another set.
     ///
-    /// # Examples
+    /// A union retains all elements from both sets.
     ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// a.conjunction_assign(&b);
-    ///
-    /// assert!(a.iter_bits().eq([31]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// a.conjunction_assign(&b);
-    ///
-    /// assert!(a.iter_bits().eq([31]));
-    /// ```
-    fn conjunction_assign(&mut self, other: &Self);
-
-    /// Modify the current set in place so that it becomes a union of this and
-    /// another set.
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitOrAssign`][core::ops::BitOrAssign] or `a |= b`.
     ///
     /// # Examples
     ///
@@ -304,7 +279,43 @@ pub trait Bits {
     /// ```
     fn union_assign(&mut self, other: &Self);
 
-    /// Construct the difference between this and another set.
+    /// Modify the current set in place so that it becomes a conjunction of this
+    /// and another set.
+    ///
+    /// A conjunction keeps the elements which are in common between two sets.
+    ///
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitAndAssign`][core::ops::BitAndAssign] or `a &= b`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: u128 = bittle::set![31, 67];
+    /// let b: u128 = bittle::set![31, 62];
+    ///
+    /// a.conjunction_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([31]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u32; 4] = bittle::set![31, 67];
+    /// let b: [u32; 4] = bittle::set![31, 62];
+    ///
+    /// a.conjunction_assign(&b);
+    ///
+    /// assert!(a.iter_bits().eq([31]));
+    /// ```
+    fn conjunction_assign(&mut self, other: &Self);
+
+    /// Modify the current set in place so that it becomes a difference of this
+    /// and another set.
     ///
     /// This assigns the elements in the second set which are not part of the
     /// first.
@@ -350,10 +361,13 @@ pub trait Bits {
     /// ```
     fn difference_assign(&mut self, other: &Self);
 
-    /// Construct the symmetric difference between this and another set.
+    /// Modify the current set in place so that it becomes a symmetric
+    /// difference of this and another set.
     ///
-    /// The empty set will contain elements which exist exclusively in one or the
-    /// other.
+    /// This retains elements which are unique to each set.
+    ///
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitXorAssign`][core::ops::BitXorAssign] or `a ^= b`.
     ///
     /// # Examples
     ///
@@ -539,7 +553,10 @@ pub trait OwnedBits: Bits {
 
     /// Construct the union between this and another set.
     ///
-    /// This retains all elements from both sets.
+    /// A union retains all elements from both sets.
+    ///
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitOr`][core::ops::BitOr] or `a | b`.
     ///
     /// # Examples
     ///
@@ -566,9 +583,12 @@ pub trait OwnedBits: Bits {
     /// ```
     fn union(self, other: Self) -> Self;
 
-    /// Constructs the conjunctionunction between this and another set.
+    /// Construct a conjunction of this and another set.
     ///
-    /// This retains elements which are common to both sets.
+    /// A conjunction keeps the elements which are in common between two sets.
+    ///
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitAnd`][core::ops::BitAnd] or `a & b`.
     ///
     /// # Examples
     ///
@@ -628,6 +648,9 @@ pub trait OwnedBits: Bits {
     /// Construct the symmetric difference between this and another set.
     ///
     /// This retains elements which are unique to each set.
+    ///
+    /// In terms of numerical operations, this is equivalent to
+    /// [`BitXor`][core::ops::BitXor] or `a ^ b`.
     ///
     /// # Examples
     ///

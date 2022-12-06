@@ -1,7 +1,7 @@
 use core::cmp;
 use core::fmt;
 use core::hash::{Hash, Hasher};
-use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign};
+use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 
 use crate::bits::{Bits, OwnedBits};
 use crate::number::Number;
@@ -25,6 +25,35 @@ use crate::number::Number;
 ///
 /// This also provides unambigious implementations of [IntoIterator], whereas
 /// arrays provide one themselves while primitive numbers do not.
+///
+/// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
+/// [`BitXor`], and [`BitOrAssign`], [`BitAndAssign`], [`BitXorAssign`]
+/// implementations to work with. They each refer to [`OwnedBits::union`],
+/// [`OwnedBits::conjunction`], and [`OwnedBits::symmetric_difference`]
+/// respectively.
+///
+/// ```
+/// use bittle::{Bits, Set};
+///
+/// let set1: Set<[u32; 4]> = bittle::set![1, 65];
+/// let set2: Set<[u32; 4]> = bittle::set![65, 110];
+///
+/// assert!((set1 | set2).iter_bits().eq([1, 65, 110]));
+/// assert!((set1 & set2).iter_bits().eq([65]));
+/// assert!((set1 ^ set2).iter_bits().eq([1, 110]));
+///
+/// let mut set3 = set1.clone();
+/// set3 |= &set2;
+/// assert!(set3.iter_bits().eq([1, 65, 110]));
+///
+/// let mut set3 = set1.clone();
+/// set3 &= &set2;
+/// assert!(set3.iter_bits().eq([65]));
+///
+/// let mut set3 = set1.clone();
+/// set3 ^= &set2;
+/// assert!(set3.iter_bits().eq([1, 110]));
+/// ```
 ///
 /// # Examples
 ///
@@ -343,57 +372,114 @@ where
     }
 }
 
-impl<T> BitOr for Set<T>
-where
-    T: BitOr<Output = T>,
-{
-    type Output = Set<T>;
-
-    #[inline]
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self {
-            bits: self.bits | rhs.bits,
-        }
-    }
-}
-
-impl<T> BitOrAssign for Set<T>
-where
-    T: BitOrAssign,
-{
-    #[inline]
-    fn bitor_assign(&mut self, rhs: Self) {
-        self.bits |= rhs.bits;
-    }
-}
-
-impl<T> BitAnd for Set<T>
-where
-    T: BitAnd<Output = T>,
-{
-    type Output = Set<T>;
-
-    #[inline]
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self {
-            bits: self.bits & rhs.bits,
-        }
-    }
-}
-
-impl<T> BitAndAssign for Set<T>
-where
-    T: BitAndAssign,
-{
-    #[inline]
-    fn bitand_assign(&mut self, rhs: Self) {
-        self.bits &= rhs.bits;
-    }
-}
-
 impl<T> From<T> for Set<T> {
     #[inline]
     fn from(bits: T) -> Self {
         Set { bits }
     }
 }
+
+macro_rules! owned_ops {
+    ($trait:ident::$n:ident, $name:ident<$t:ident>, $fn:ident) => {
+        impl<$t> $trait<$name<$t>> for $name<$t>
+        where
+            $t: Copy + OwnedBits,
+        {
+            type Output = $name<$t>;
+
+            #[inline]
+            fn $n(self, rhs: $name<$t>) -> Self::Output {
+                $name {
+                    bits: self.bits.$fn(rhs.bits),
+                }
+            }
+        }
+
+        impl<$t> $trait<&$name<$t>> for $name<$t>
+        where
+            $t: Copy + OwnedBits,
+        {
+            type Output = $name<$t>;
+
+            #[inline]
+            fn $n(self, rhs: &$name<$t>) -> Self::Output {
+                $name {
+                    bits: self.bits.$fn(rhs.bits),
+                }
+            }
+        }
+
+        impl<$t> $trait<$name<$t>> for &$name<$t>
+        where
+            $t: Copy + OwnedBits,
+        {
+            type Output = $name<$t>;
+
+            #[inline]
+            fn $n(self, rhs: $name<$t>) -> Self::Output {
+                $name {
+                    bits: self.bits.$fn(rhs.bits),
+                }
+            }
+        }
+
+        impl<$t> $trait<&$name<$t>> for &$name<$t>
+        where
+            $t: Copy + OwnedBits,
+        {
+            type Output = $name<$t>;
+
+            #[inline]
+            fn $n(self, rhs: &$name<$t>) -> Self::Output {
+                $name {
+                    bits: self.bits.$fn(rhs.bits),
+                }
+            }
+        }
+    };
+}
+
+macro_rules! assign_ops {
+    ($trait:ident::$n:ident, $name:ident<$t:ident>, $fn:ident) => {
+        impl<$t> $trait<$name<$t>> for $name<$t>
+        where
+            $t: Bits,
+        {
+            #[inline]
+            fn $n(&mut self, rhs: $name<$t>) {
+                self.bits.$fn(&rhs.bits);
+            }
+        }
+
+        impl<$t> $trait<&$name<$t>> for $name<$t>
+        where
+            $t: Bits,
+        {
+            #[inline]
+            fn $n(&mut self, rhs: &$name<$t>) {
+                self.bits.$fn(&rhs.bits);
+            }
+        }
+
+        impl<$t> $trait<&$name<$t>> for &mut $name<$t>
+        where
+            $t: Bits,
+        {
+            #[inline]
+            fn $n(&mut self, rhs: &$name<$t>) {
+                self.bits.$fn(&rhs.bits);
+            }
+        }
+    };
+}
+
+owned_ops!(BitOr::bitor, Set<T>, union);
+assign_ops!(BitOrAssign::bitor_assign, Set<T>, union_assign);
+owned_ops!(BitAnd::bitand, Set<T>, conjunction);
+assign_ops!(BitAndAssign::bitand_assign, Set<T>, conjunction_assign);
+owned_ops!(BitXor::bitxor, Set<T>, symmetric_difference);
+assign_ops!(
+    BitXorAssign::bitxor_assign,
+    Set<T>,
+    symmetric_difference_assign
+);
