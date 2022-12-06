@@ -28,42 +28,42 @@ macro_rules! number {
         }
 
         impl Bits for $ty {
-            type IterBits<'a> = IterBits<Self> where Self: 'a;
+            type IterOnes<'a> = IterOnes<Self> where Self: 'a;
 
             #[inline]
-            fn len(&self) -> u32 {
+            fn bits_len(&self) -> u32 {
                 <$ty>::count_ones(*self)
             }
 
             #[inline]
-            fn capacity(&self) -> u32 {
+            fn bits_capacity(&self) -> u32 {
                 Self::BITS
             }
 
             #[inline]
-            fn is_empty(&self) -> bool {
-                *self == Self::EMPTY
+            fn is_zeros(&self) -> bool {
+                *self == Self::ZEROS
             }
 
             #[inline]
-            fn is_full(&self) -> bool {
-                *self == Self::FULL
+            fn is_ones(&self) -> bool {
+                *self == Self::ONES
             }
 
             #[inline]
-            fn test(&self, index: u32) -> bool {
+            fn bit_test(&self, index: u32) -> bool {
                 const ONE: $ty = 1;
                 (*self & ONE.wrapping_shl(index)) != 0
             }
 
             #[inline]
-            fn set(&mut self, index: u32) {
+            fn bit_set(&mut self, index: u32) {
                 const ONE: $ty = 1;
                 *self |= ONE.wrapping_shl(index);
             }
 
             #[inline]
-            fn unset(&mut self, index: u32) {
+            fn bit_clear(&mut self, index: u32) {
                 const ONE: $ty = 1;
                 *self &= !ONE.wrapping_shl(index);
             }
@@ -89,31 +89,31 @@ macro_rules! number {
             }
 
             #[inline]
-            fn clear(&mut self) {
-                *self = Self::EMPTY;
+            fn bits_clear(&mut self) {
+                *self = Self::ZEROS;
             }
 
             #[inline]
-            fn iter_bits(&self) -> Self::IterBits<'_> {
-                IterBits { bits: *self }
+            fn iter_ones(&self) -> Self::IterOnes<'_> {
+                IterOnes { bits: *self }
             }
         }
 
         impl OwnedBits for $ty {
             const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
-            const EMPTY: Self = 0;
-            const FULL: Self = !0;
+            const ZEROS: Self = 0;
+            const ONES: Self = !0;
 
-            type IntoBits = IterBits<Self>;
+            type IntoIterOnes = IterOnes<Self>;
 
             #[inline]
-            fn empty() -> Self {
-                Self::EMPTY
+            fn zeros() -> Self {
+                Self::ZEROS
             }
 
             #[inline]
-            fn full() -> Self {
-                Self::FULL
+            fn ones() -> Self {
+                Self::ONES
             }
 
             #[inline]
@@ -143,8 +143,8 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_bits(self) -> Self::IntoBits {
-                IterBits { bits: self }
+            fn into_iter_ones(self) -> Self::IntoIterOnes {
+                IterOnes { bits: self }
             }
         }
     };
@@ -166,14 +166,14 @@ number!(i128);
 /// An iterator over the bits of a primitive number.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct IterBits<T>
+pub struct IterOnes<T>
 where
     T: Number,
 {
     bits: T,
 }
 
-impl<T> Iterator for IterBits<T>
+impl<T> Iterator for IterOnes<T>
 where
     T: OwnedBits + Number,
 {
@@ -181,12 +181,12 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.bits.is_empty() {
+        if self.bits.is_zeros() {
             return None;
         }
 
         let index = self.bits.trailing_zeros();
-        self.bits.unset(index);
+        self.bits.bit_clear(index);
         Some(index)
     }
 }

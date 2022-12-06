@@ -11,11 +11,31 @@
 //! generically interacting with and manipulating bit sets over types such as
 //! `u128`, `[u32; 4]`, or even slices like `&[u8]`.
 //!
+//! To to these implementations it is possible to use bit-oriented APIs on
+//! regular types, such as with arrays and vectors:
+//!
+//! ```
+//! use bittle::Bits;
+//!
+//! let array: [u32; 4] = bittle::set![4, 63, 71];
+//! assert!(array.iter_ones().eq([4, 63, 71]));
+//! assert!(array.bit_test(63));
+//!
+//! let mut vector: Vec<u8> = vec![0, 1, 2, 3];
+//! dbg!(vector.iter_ones().collect::<Vec<_>>());
+//! assert!(vector.iter_ones().eq([8, 17, 24, 25]));
+//!
+//! vector.bit_set(20);
+//! assert_eq!(vector, [0, 1, 18, 3]);
+//! ```
+//!
 //! <br>
 //!
 //! ## Usage
 //!
-//! Add `bittle` to your `Cargo.toml`:
+//! Add `bittle` as a dependency in your `Cargo.toml`:
+//!
+//! <br>
 //!
 //! ```toml
 //! [dependencies]
@@ -24,25 +44,34 @@
 //!
 //! <br>
 //!
-//! ## Examples
+//! ## Guide
+//!
+//! Due to how broadly these traits are implemented, we also try and avoid using
+//! names which are commonly used in other APIs, instead opting for terminology
+//! such as:
+//!
+//! * `is_empty` becomes `is_zeros`.
+//! * `test` becomes `bit_test`.
+//! * `set` becomes `bit_set`.
+//! * `clear` becomes `bits_clear`.
 //!
 //! ```rust
 //! use std::mem;
 //!
 //! use bittle::Bits;
 //!
-//! let mut set = 0u64;
+//! let mut a = 0u64;
 //!
-//! assert!(!set.test(31));
-//! set.set(31);
-//! assert!(set.test(31));
-//! set.unset(31);
-//! assert!(!set.test(31));
+//! assert!(a.is_zeros());
 //!
-//! assert_eq!(mem::size_of_val(&set), mem::size_of::<u64>());
+//! assert!(!a.bit_test(31));
+//! a.bit_set(31);
+//! assert!(a.bit_test(31));
+//! a.bit_clear(31);
+//! assert!(!a.bit_test(31));
 //! ```
 //!
-//! Some other interesting operations, such as [Bits::join] are available,
+//! Some other interesting operations, such as [Bits::join_ones] are available,
 //! allowing bitsets to act like masks over other iterators:
 //!
 //! ```rust
@@ -51,19 +80,14 @@
 //! let elements = vec![10, 48, 101];
 //! let mut m = 0u128;
 //!
-//! // Since set is empty, no elements are iterated over.
-//! let mut it = m.join(&elements);
-//! assert_eq!(it.next(), None);
-//!
-//! m.set(1);
-//!
-//! let mut it = m.join(&elements);
-//! assert_eq!(it.next(), Some(&48));
-//! assert_eq!(it.next(), None);
+//! m.bit_set(0);
+//! assert!(m.join_ones(&elements).eq([&10]));
+//! m.bit_set(2);
+//! assert!(m.join_ones(&elements).eq([&10, &101]));
 //! ```
 //!
 //! [Copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
-//! [Bits::join]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join
+//! [Bits::join_ones]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
 
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]

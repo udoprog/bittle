@@ -38,21 +38,21 @@ use crate::number::Number;
 /// let set1: Set<[u32; 4]> = bittle::set![1, 65];
 /// let set2: Set<[u32; 4]> = bittle::set![65, 110];
 ///
-/// assert!((set1 | set2).iter_bits().eq([1, 65, 110]));
-/// assert!((set1 & set2).iter_bits().eq([65]));
-/// assert!((set1 ^ set2).iter_bits().eq([1, 110]));
+/// assert!((set1 | set2).iter_ones().eq([1, 65, 110]));
+/// assert!((set1 & set2).iter_ones().eq([65]));
+/// assert!((set1 ^ set2).iter_ones().eq([1, 110]));
 ///
 /// let mut set3 = set1.clone();
 /// set3 |= &set2;
-/// assert!(set3.iter_bits().eq([1, 65, 110]));
+/// assert!(set3.iter_ones().eq([1, 65, 110]));
 ///
 /// let mut set3 = set1.clone();
 /// set3 &= &set2;
-/// assert!(set3.iter_bits().eq([65]));
+/// assert!(set3.iter_ones().eq([65]));
 ///
 /// let mut set3 = set1.clone();
 /// set3 ^= &set2;
-/// assert!(set3.iter_bits().eq([1, 110]));
+/// assert!(set3.iter_ones().eq([1, 110]));
 /// ```
 ///
 /// # Examples
@@ -60,13 +60,13 @@ use crate::number::Number;
 /// ```
 /// use bittle::{Bits, OwnedBits, Set};
 ///
-/// let mut set = Set::<u128>::empty();
+/// let mut a = Set::<u128>::zeros();
 ///
-/// assert!(!set.test(1));
-/// set.set(1);
-/// assert!(set.test(1));
-/// set.unset(1);
-/// assert!(!set.test(1));
+/// assert!(!a.bit_test(1));
+/// a.bit_set(1);
+/// assert!(a.bit_test(1));
+/// a.bit_clear(1);
+/// assert!(!a.bit_test(1));
 /// ```
 ///
 /// The bit set can also use arrays as its backing storage.
@@ -74,13 +74,13 @@ use crate::number::Number;
 /// ```
 /// use bittle::{Bits, Set};
 ///
-/// let mut set = Set::<[u64; 16]>::new();
+/// let mut a = Set::<[u64; 16]>::new();
 ///
-/// assert!(!set.test(172));
-/// set.set(172);
-/// assert!(set.test(172));
-/// set.unset(172);
-/// assert!(!set.test(172));
+/// assert!(!a.bit_test(172));
+/// a.bit_set(172);
+/// assert!(a.bit_test(172));
+/// a.bit_clear(172);
+/// assert!(!a.bit_test(172));
 /// ```
 ///
 /// We can use the iterator of each set to compare bit sets of different kinds:
@@ -88,14 +88,14 @@ use crate::number::Number;
 /// ```
 /// use bittle::{Bits, OwnedBits, Set};
 ///
-/// let mut a = Set::<[u64; 2]>::empty();
-/// let mut b = Set::<u128>::empty();
+/// let mut a = Set::<[u64; 2]>::zeros();
+/// let mut b = Set::<u128>::zeros();
 ///
-/// a.set(111);
-/// assert!(!a.iter_bits().eq(b.iter_bits()));
+/// a.bit_set(111);
+/// assert!(!a.iter_ones().eq(b.iter_ones()));
 ///
-/// b.set(111);
-/// assert!(a.iter_bits().eq(b.iter_bits()));
+/// b.bit_set(111);
+/// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 #[derive(Clone, Copy)]
 #[repr(transparent)]
@@ -113,11 +113,11 @@ impl<T> Set<T> {
     ///
     /// let mut set = Set::from_bits(0b00001001u32);
     ///
-    /// assert!(!set.is_empty());
-    /// assert!(set.test(0));
-    /// assert!(!set.test(1));
-    /// assert!(!set.test(2));
-    /// assert!(set.test(3));
+    /// assert!(!set.is_zeros());
+    /// assert!(set.bit_test(0));
+    /// assert!(!set.bit_test(1));
+    /// assert!(!set.bit_test(2));
+    /// assert!(set.bit_test(3));
     /// ```
     #[inline]
     pub const fn from_bits(bits: T) -> Self {
@@ -136,14 +136,14 @@ where
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::<u32>::new();
+    /// let mut a = Set::<u32>::new();
     ///
-    /// assert!(set.is_empty());
-    /// set.set(0);
-    /// assert!(!set.is_empty());
+    /// assert!(a.is_zeros());
+    /// a.bit_set(0);
+    /// assert!(!a.is_zeros());
     /// ```
     pub const fn new() -> Self {
-        Self { bits: T::EMPTY }
+        Self { bits: T::ZEROS }
     }
 }
 
@@ -152,19 +152,19 @@ where
     T: OwnedBits,
 {
     const BITS: u32 = T::BITS;
-    const FULL: Self = Self { bits: T::FULL };
-    const EMPTY: Self = Self { bits: T::EMPTY };
+    const ONES: Self = Self { bits: T::ONES };
+    const ZEROS: Self = Self { bits: T::ZEROS };
 
-    type IntoBits = T::IntoBits;
+    type IntoIterOnes = T::IntoIterOnes;
 
     #[inline]
-    fn empty() -> Self {
-        Self { bits: T::EMPTY }
+    fn zeros() -> Self {
+        Self { bits: T::ZEROS }
     }
 
     #[inline]
-    fn full() -> Self {
-        Self { bits: T::FULL }
+    fn ones() -> Self {
+        Self { bits: T::ONES }
     }
 
     #[inline]
@@ -203,8 +203,8 @@ where
     }
 
     #[inline]
-    fn into_bits(self) -> T::IntoBits {
-        self.bits.into_bits()
+    fn into_iter_ones(self) -> T::IntoIterOnes {
+        self.bits.into_iter_ones()
     }
 }
 
@@ -212,48 +212,48 @@ impl<T> Bits for Set<T>
 where
     T: Bits,
 {
-    type IterBits<'a> = T::IterBits<'a>
-        where
-            Self: 'a;
+    type IterOnes<'a> = T::IterOnes<'a>
+    where
+        Self: 'a;
 
     #[inline]
-    fn len(&self) -> u32 {
-        self.bits.len()
+    fn bits_len(&self) -> u32 {
+        self.bits.bits_len()
     }
 
     #[inline]
-    fn capacity(&self) -> u32 {
-        self.bits.capacity()
+    fn bits_capacity(&self) -> u32 {
+        self.bits.bits_capacity()
     }
 
     #[inline]
-    fn is_full(&self) -> bool {
-        self.bits.is_full()
+    fn is_ones(&self) -> bool {
+        self.bits.is_ones()
     }
 
     #[inline]
-    fn is_empty(&self) -> bool {
-        self.bits.is_empty()
+    fn is_zeros(&self) -> bool {
+        self.bits.is_zeros()
     }
 
     #[inline]
-    fn test(&self, index: u32) -> bool {
-        self.bits.test(index)
+    fn bit_test(&self, index: u32) -> bool {
+        self.bits.bit_test(index)
     }
 
     #[inline]
-    fn set(&mut self, index: u32) {
-        self.bits.set(index);
+    fn bit_set(&mut self, index: u32) {
+        self.bits.bit_set(index);
     }
 
     #[inline]
-    fn unset(&mut self, index: u32) {
-        self.bits.unset(index);
+    fn bit_clear(&mut self, index: u32) {
+        self.bits.bit_clear(index);
     }
 
     #[inline]
-    fn clear(&mut self) {
-        self.bits.clear();
+    fn bits_clear(&mut self) {
+        self.bits.bits_clear();
     }
 
     #[inline]
@@ -277,8 +277,8 @@ where
     }
 
     #[inline]
-    fn iter_bits(&self) -> T::IterBits<'_> {
-        self.bits.iter_bits()
+    fn iter_ones(&self) -> T::IterOnes<'_> {
+        self.bits.iter_ones()
     }
 }
 
@@ -289,7 +289,7 @@ where
     /// Perform a fast length calculation for Bitss specialized over numerical types.
     #[inline]
     #[allow(clippy::len_without_is_empty)]
-    pub fn len(&self) -> u32 {
+    pub fn bits_len(&self) -> u32 {
         T::count_ones(self.bits)
     }
 }
@@ -300,7 +300,7 @@ where
 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_set().entries(self.iter_bits()).finish()
+        f.debug_set().entries(self.iter_ones()).finish()
     }
 }
 
@@ -350,12 +350,12 @@ impl<T> IntoIterator for Set<T>
 where
     T: OwnedBits,
 {
-    type IntoIter = T::IntoBits;
+    type IntoIter = T::IntoIterOnes;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.bits.into_bits()
+        self.bits.into_iter_ones()
     }
 }
 
@@ -363,12 +363,12 @@ impl<'a, T> IntoIterator for &'a Set<T>
 where
     T: OwnedBits,
 {
-    type IntoIter = T::IterBits<'a>;
+    type IntoIter = T::IterOnes<'a>;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.iter_bits()
+        self.iter_ones()
     }
 }
 

@@ -2,32 +2,32 @@
 
 use crate::bits::{Bits, OwnedBits};
 use crate::number::Number;
-use crate::slice::IterBits;
+use crate::slice::IterOnes;
 
 impl<T, const N: usize> OwnedBits for [T; N]
 where
     T: Eq + OwnedBits + Number,
 {
     const BITS: u32 = T::BITS * N as u32;
-    const EMPTY: Self = [T::EMPTY; N];
-    const FULL: Self = [T::FULL; N];
+    const ZEROS: Self = [T::ZEROS; N];
+    const ONES: Self = [T::ONES; N];
 
-    type IntoBits = IntoBits<T, N>;
+    type IntoIterOnes = IntoIterOnes<T, N>;
 
     #[inline]
-    fn empty() -> Self {
-        Self::EMPTY
+    fn zeros() -> Self {
+        Self::ZEROS
     }
 
     #[inline]
-    fn full() -> Self {
-        Self::FULL
+    fn ones() -> Self {
+        Self::ONES
     }
 
     #[inline]
     fn with(mut self, bit: u32) -> Self {
         if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
-            bits.set(bit % T::BITS);
+            bits.bit_set(bit % T::BITS);
         }
 
         self
@@ -70,10 +70,10 @@ where
     }
 
     #[inline]
-    fn into_bits(self) -> Self::IntoBits {
+    fn into_iter_ones(self) -> Self::IntoIterOnes {
         let mut iter = IntoIterator::into_iter(self);
         let current = iter.next().map(|v| (v, 0));
-        IntoBits { iter, current }
+        IntoIterOnes { iter, current }
     }
 }
 
@@ -81,41 +81,41 @@ impl<T, const N: usize> Bits for [T; N]
 where
     T: Eq + OwnedBits + Number,
 {
-    type IterBits<'a> = IterBits<'a, T> where Self: 'a;
+    type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
 
     #[inline]
-    fn len(&self) -> u32 {
-        self.iter().map(Bits::len).sum()
+    fn bits_len(&self) -> u32 {
+        self.iter().map(Bits::bits_len).sum()
     }
 
     #[inline]
-    fn capacity(&self) -> u32 {
+    fn bits_capacity(&self) -> u32 {
         T::BITS.saturating_mul(N as u32)
     }
 
     #[inline]
-    fn is_empty(&self) -> bool {
-        *self == Self::EMPTY
+    fn is_zeros(&self) -> bool {
+        *self == Self::ZEROS
     }
 
     #[inline]
-    fn is_full(&self) -> bool {
-        *self == Self::FULL
+    fn is_ones(&self) -> bool {
+        *self == Self::ONES
     }
 
     #[inline]
-    fn test(&self, index: u32) -> bool {
+    fn bit_test(&self, index: u32) -> bool {
         if let Some(bits) = self.get((index / T::BITS) as usize) {
-            return bits.test(index % T::BITS);
+            return bits.bit_test(index % T::BITS);
         }
 
         false
     }
 
     #[inline]
-    fn set(&mut self, index: u32) {
+    fn bit_set(&mut self, index: u32) {
         if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.set(index % T::BITS);
+            bits.bit_set(index % T::BITS);
         }
     }
 
@@ -148,33 +148,33 @@ where
     }
 
     #[inline]
-    fn unset(&mut self, index: u32) {
+    fn bit_clear(&mut self, index: u32) {
         if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.unset(index % T::BITS);
+            bits.bit_clear(index % T::BITS);
         }
     }
 
     #[inline]
-    fn clear(&mut self) {
+    fn bits_clear(&mut self) {
         for b in self {
-            b.clear();
+            b.bits_clear();
         }
     }
 
     #[inline]
-    fn iter_bits(&self) -> Self::IterBits<'_> {
-        IterBits::new(IntoIterator::into_iter(self))
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        IterOnes::new(IntoIterator::into_iter(self))
     }
 }
 
 /// An iterator over the bits of an array acting as a bit set.
 #[derive(Clone)]
-pub struct IntoBits<T, const N: usize> {
+pub struct IntoIterOnes<T, const N: usize> {
     iter: core::array::IntoIter<T, N>,
     current: Option<(T, u32)>,
 }
 
-impl<T, const N: usize> Iterator for IntoBits<T, N>
+impl<T, const N: usize> Iterator for IntoIterOnes<T, N>
 where
     T: OwnedBits + Number,
 {
@@ -187,9 +187,9 @@ where
                 return None;
             };
 
-            if !bits.is_empty() {
+            if !bits.is_zeros() {
                 let index = T::trailing_zeros(*bits);
-                bits.unset(index);
+                bits.bit_clear(index);
                 return Some(*offset + index);
             }
 
