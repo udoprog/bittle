@@ -8,7 +8,7 @@ impl<T, const N: usize> OwnedBits for [T; N]
 where
     T: Number,
 {
-    const BITS: u32 = T::NUMBER_BITS * N as u32;
+    const BITS: u32 = T::BITS * N as u32;
     const EMPTY: Self = [T::EMPTY; N];
     const FULL: Self = [T::FULL; N];
 
@@ -50,8 +50,8 @@ where
 
     #[inline]
     fn test(&self, index: u32) -> bool {
-        if let Some(bits) = self.get((index / T::NUMBER_BITS) as usize) {
-            return bits.test(index % T::NUMBER_BITS);
+        if let Some(bits) = self.get((index / T::BITS) as usize) {
+            return bits.test(index % T::BITS);
         }
 
         false
@@ -59,8 +59,8 @@ where
 
     #[inline]
     fn set(&mut self, index: u32) {
-        if let Some(bits) = self.get_mut((index / T::NUMBER_BITS) as usize) {
-            bits.set(index % T::NUMBER_BITS);
+        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
+            bits.set(index % T::BITS);
         }
     }
 
@@ -87,8 +87,8 @@ where
 
     #[inline]
     fn unset(&mut self, index: u32) {
-        if let Some(bits) = self.get_mut((index / T::NUMBER_BITS) as usize) {
-            bits.unset(index % T::NUMBER_BITS);
+        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
+            bits.unset(index % T::BITS);
         }
     }
 
@@ -134,7 +134,7 @@ where
                 return Some(*offset + index);
             }
 
-            self.current = Some((self.iter.next()?, *offset + T::NUMBER_BITS));
+            self.current = Some((self.iter.next()?, *offset + T::BITS));
         }
     }
 }

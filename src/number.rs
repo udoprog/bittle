@@ -16,9 +16,6 @@ pub trait Number:
     + BitAndAssign
     + OwnedBits
 {
-    /// How many bits there are in this number.
-    const NUMBER_BITS: u32 = (core::mem::size_of::<Self>() * 8) as u32;
-
     /// Number of trailing zeros.
     fn trailing_zeros(self) -> u32;
 
@@ -103,7 +100,7 @@ macro_rules! number {
         }
 
         impl OwnedBits for $ty {
-            const BITS: u32 = <$ty>::NUMBER_BITS;
+            const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
             const EMPTY: Self = 0;
             const FULL: Self = !0;
 
