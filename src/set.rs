@@ -3,8 +3,9 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 
-use crate::bits::{Bits, OwnedBits};
+use crate::bits::Bits;
 use crate::number::Number;
+use crate::owned_bits::OwnedBits;
 
 /// A convenience wrapper around a [Bits] which itself implements [Bits] and
 /// a number of useful traits.

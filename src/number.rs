@@ -1,6 +1,7 @@
 //! [Bits] implementation and associated types for numbers.
 
-use crate::bits::{Bits, OwnedBits};
+use crate::bits::Bits;
+use crate::owned_bits::OwnedBits;
 
 /// Basic numerical trait for the plumbing of a bit set. This ensures that only
 /// primitive types can be used as the basis of a bit set backed by an array,

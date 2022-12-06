@@ -10,6 +10,23 @@
 /// This does not include owned operations such as turning the bit set into an
 /// owned iterator using [OwnedBits::into_iter_ones], for more like that see
 /// [OwnedBits].
+///
+/// # Examples
+///
+/// We can use the iterator of each set to compare bit sets of different kinds.
+/// The [Bits::iter_ones] iterator is guaranteed to iterate elements in the same
+/// order:
+///
+/// ```
+/// use bittle::Bits;
+///
+/// let a: [u64; 2] = bittle::set![111];
+/// let mut b = 0u128;
+///
+/// assert!(!a.iter_ones().eq(b.iter_ones()));
+/// b.bit_set(111);
+/// assert!(a.iter_ones().eq(b.iter_ones()));
+/// ```
 pub trait Bits {
     /// The iterator over this bit pattern.
     ///
@@ -398,6 +415,8 @@ pub trait Bits {
 
     /// Construct an iterator over ones that are set in the bit set.
     ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
     /// # Examples
     ///
     /// ```
@@ -448,286 +467,6 @@ pub trait Bits {
             last: 0,
         }
     }
-}
-
-/// Trait which abstracts over type capable of representing owned bit sets.
-///
-/// This extends [Bits] and adds the necessary capabilities to generically
-/// construct a bit set instead of only operating over it.
-///
-/// # Examples
-///
-/// ```
-/// use bittle::Bits;
-///
-/// let mut a = 0u128;
-///
-/// assert!(!a.bit_test(1));
-/// a.bit_set(1);
-/// assert!(a.bit_test(1));
-/// a.bit_clear(1);
-/// assert!(!a.bit_test(1));
-/// ```
-///
-/// The bit set can also use arrays as its backing storage.
-///
-/// ```
-/// use bittle::Bits;
-///
-/// let mut a = [0u64; 16];
-///
-/// assert!(!a.bit_test(172));
-/// a.bit_set(172);
-/// assert!(a.bit_test(172));
-/// a.bit_clear(172);
-/// assert!(!a.bit_test(172));
-/// ```
-///
-/// We can use the iterator of each set to compare bit sets of different kinds:
-///
-/// ```
-/// use bittle::Bits;
-///
-/// let a: [u64; 2] = bittle::set![111];
-/// let mut b = 0u128;
-///
-/// assert!(!a.iter_ones().eq(b.iter_ones()));
-/// b.bit_set(111);
-/// assert!(a.iter_ones().eq(b.iter_ones()));
-/// ```
-pub trait OwnedBits: Bits {
-    /// Full number of bits in the set.
-    const BITS: u32;
-
-    /// Bit-pattern for an empty bit pattern.
-    ///
-    /// See [OwnedBits::zeros].
-    const ZEROS: Self;
-
-    /// Bit-pattern for a full bit pattern.
-    ///
-    /// See [OwnedBits::ones].
-    const ONES: Self;
-
-    /// Owning iterator over bits.
-    ///
-    /// See [OwnedBits::into_iter_ones].
-    type IntoIterOnes: Iterator<Item = u32>;
-
-    /// Construct a empty bit set that is empty, where no element is set.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = u128::zeros();
-    /// assert!(set.is_zeros());
-    /// assert_eq!(set.iter_ones().count(), 0);
-    /// ```
-    fn zeros() -> Self;
-
-    /// Construct a empty bit set that is full, where every single element
-    /// possible is set to a one.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = u128::ones();
-    /// assert!(set.iter_ones().eq(0..128))
-    /// ```
-    fn ones() -> Self;
-
-    /// Set the given bit and return the modified set.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = u128::zeros().with_bit(8).with_bit(12);
-    /// assert!(set.iter_ones().eq([8, 12]))
-    /// ```
-    ///
-    /// With arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = <[u32; 4]>::zeros().with_bit(8).with_bit(12);
-    /// assert!(set.iter_ones().eq([8, 12]))
-    /// ```
-    fn with_bit(self, bit: u32) -> Self;
-
-    /// Set the given bit and return the modified set.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = u8::ones().without_bit(2);
-    /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7]))
-    /// ```
-    ///
-    /// With arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let set = <[u8; 2]>::ones().without_bit(2).without_bit(10);
-    /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
-    /// ```
-    fn without_bit(self, bit: u32) -> Self;
-
-    /// Construct the union between this and another set.
-    ///
-    /// A union retains all elements from both sets.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitOr`][core::ops::BitOr] or `a | b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// let c = a.union(b);
-    /// assert!(c.iter_ones().eq([31, 62, 67]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// let c = a.union(b);
-    /// assert!(c.iter_ones().eq([31, 62, 67]));
-    /// ```
-    fn union(self, other: Self) -> Self;
-
-    /// Construct a conjunction of this and another set.
-    ///
-    /// A conjunction keeps the elements which are in common between two sets.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitAnd`][core::ops::BitAnd] or `a & b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// let c = a.conjunction(b);
-    /// assert!(c.iter_ones().eq([31]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// let c = a.conjunction(b);
-    /// assert!(c.iter_ones().eq([31]));
-    /// ```
-    fn conjunction(self, other: Self) -> Self;
-
-    /// Construct the difference between this and another set.
-    ///
-    /// This returns the elements in the second set which are not part of the
-    /// first.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Set, Bits, OwnedBits};
-    ///
-    /// let a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// let c = a.difference(b);
-    /// assert!(c.iter_ones().eq([62]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// let c = a.difference(b);
-    /// assert!(c.iter_ones().eq([62]));
-    /// ```
-    fn difference(self, other: Self) -> Self;
-
-    /// Construct the symmetric difference between this and another set.
-    ///
-    /// This retains elements which are unique to each set.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitXor`][core::ops::BitXor] or `a ^ b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// let c = a.symmetric_difference(b);
-    /// assert!(c.iter_ones().eq([62, 67]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// let c = a.symmetric_difference(b);
-    /// assert!(c.iter_ones().eq([62, 67]));
-    /// ```
-    fn symmetric_difference(self, other: Self) -> Self;
-
-    /// Construct an owning iterator over a bit set.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: u128 = bittle::set![3, 7];
-    /// assert!(a.into_iter_ones().eq([3, 7]));
-    /// ```
-    ///
-    /// A larger bit set:
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let a: [u32; 4] = bittle::set![4, 63, 71];
-    /// assert!(a.into_iter_ones().eq([4, 63, 71]));
-    /// ```
-    fn into_iter_ones(self) -> Self::IntoIterOnes;
 }
 
 /// A joined iterator.

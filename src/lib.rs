@@ -107,4 +107,7 @@ mod set;
 pub use self::set::Set;
 
 mod bits;
-pub use self::bits::{Bits, OwnedBits};
+pub use self::bits::Bits;
+
+mod owned_bits;
+pub use self::owned_bits::OwnedBits;
