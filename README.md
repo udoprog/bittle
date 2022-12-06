@@ -7,7 +7,7 @@
 
 A library for working with small and cheap bit sets and masks.
 
-The name `bittle` comes from `bit` and `little`.
+The name `bittle` comes from `bit` and `little`. Small bitsets!
 
 The bit sets are entirely defined using [Copy] types in Rust such as `u64`
 or `[u128; 4]` who's number of bits define the capacity of the set.
@@ -15,9 +15,9 @@ or `[u128; 4]` who's number of bits define the capacity of the set.
 ```rust
 use std::mem;
 
-use bittle::FixedSet;
+use bittle::Bits;
 
-let mut set = FixedSet::<u64>::new();
+let mut set = 0u64;
 
 assert!(!set.test(31));
 set.set(31);
@@ -28,15 +28,14 @@ assert!(!set.test(31));
 assert_eq!(mem::size_of_val(&set), mem::size_of::<u64>());
 ```
 
-The [Mask] trait can be used to abstract over the read-only side of a bit
-set. It has useful utilities such as iterating over masked elements through
-[Mask::join].
+Some other interesting operations, such as [Bits::join] are available,
+allowing bitsets to act like masks over other iterators:
 
 ```rust
-use bittle::{FixedSet, Mask};
+use bittle::Bits;
 
 let elements = vec![10, 48, 101];
-let mut m = FixedSet::<u128>::new();
+let mut m = 0u128;
 
 // Since set is empty, no elements are iterated over.
 let mut it = m.join(&elements);
@@ -50,5 +49,4 @@ assert_eq!(it.next(), None);
 ```
 
 [Copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
-[Mask]: https://docs.rs/bittle/latest/bittle/trait.Mask.html
-[Mask::join]: https://docs.rs/bittle/latest/bittle/trait.Mask.html#method.join
+[Bits::join]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join

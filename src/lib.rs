@@ -5,7 +5,7 @@
 //!
 //! A library for working with small and cheap bit sets and masks.
 //!
-//! The name `bittle` comes from `bit` and `little`.
+//! The name `bittle` comes from `bit` and `little`. Small bitsets!
 //!
 //! The bit sets are entirely defined using [Copy] types in Rust such as `u64`
 //! or `[u128; 4]` who's number of bits define the capacity of the set.
@@ -13,9 +13,9 @@
 //! ```rust
 //! use std::mem;
 //!
-//! use bittle::FixedSet;
+//! use bittle::Bits;
 //!
-//! let mut set = FixedSet::<u64>::new();
+//! let mut set = 0u64;
 //!
 //! assert!(!set.test(31));
 //! set.set(31);
@@ -26,15 +26,14 @@
 //! assert_eq!(mem::size_of_val(&set), mem::size_of::<u64>());
 //! ```
 //!
-//! The [Mask] trait can be used to abstract over the read-only side of a bit
-//! set. It has useful utilities such as iterating over masked elements through
-//! [Mask::join].
+//! Some other interesting operations, such as [Bits::join] are available,
+//! allowing bitsets to act like masks over other iterators:
 //!
 //! ```rust
-//! use bittle::{FixedSet, Mask};
+//! use bittle::Bits;
 //!
 //! let elements = vec![10, 48, 101];
-//! let mut m = FixedSet::<u128>::new();
+//! let mut m = 0u128;
 //!
 //! // Since set is empty, no elements are iterated over.
 //! let mut it = m.join(&elements);
@@ -48,11 +47,11 @@
 //! ```
 //!
 //! [Copy]: https://doc.rust-lang.org/std/marker/trait.Copy.html
-//! [Mask]: https://docs.rs/bittle/latest/bittle/trait.Mask.html
-//! [Mask::join]: https://docs.rs/bittle/latest/bittle/trait.Mask.html#method.join
+//! [Bits::join]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join
 
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]
+#![no_std]
 
 // This library makes hard assumptions on u32 <= usize.
 const _: () = assert!(core::mem::size_of::<u32>() <= core::mem::size_of::<usize>());
@@ -60,42 +59,12 @@ const _: () = assert!(core::mem::size_of::<u32>() <= core::mem::size_of::<usize>
 #[macro_use]
 mod macros;
 
-mod mask;
-pub use self::mask::Mask;
+pub mod array;
+pub mod number;
+pub mod slice;
 
-mod fixed_set;
-pub use self::fixed_set::{Bits, FixedSet, Number};
+mod set;
+pub use self::set::Set;
 
-/// Construct the special mask where every index is set.
-///
-/// # Examples
-///
-/// ```
-/// use bittle::Mask;
-///
-/// let n = bittle::all();
-///
-/// assert!(n.test(0));
-/// assert!(n.test(u32::MAX));
-/// ```
-#[inline]
-pub fn all() -> self::mask::All {
-    self::mask::all::All::default()
-}
-
-/// Construct the special mask where no index is set.
-///
-/// # Examples
-///
-/// ```
-/// use bittle::Mask;
-///
-/// let n = bittle::none();
-///
-/// assert!(!n.test(0));
-/// assert!(!n.test(u32::MAX));
-/// ```
-#[inline]
-pub fn none() -> self::mask::None {
-    self::mask::none::None::default()
-}
+mod bits;
+pub use self::bits::{Bits, OwnedBits};
