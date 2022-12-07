@@ -3,12 +3,11 @@
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
-use crate::number::Number;
 use crate::slice::{IterOnes, IterZeros};
 
 impl<T, const N: usize> BitsOwned for [T; N]
 where
-    T: Eq + BitsOwned + Number,
+    T: Copy + Eq + BitsOwned,
 {
     #[allow(clippy::cast_possible_truncation)]
     const BITS: u32 = match T::BITS.checked_mul(N as u32) {
@@ -94,7 +93,7 @@ where
 
 impl<T, const N: usize> Bits for [T; N]
 where
-    T: Eq + BitsOwned + Number,
+    T: Copy + Eq + BitsOwned,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
@@ -137,7 +136,7 @@ where
 
 impl<T, const N: usize> BitsMut for [T; N]
 where
-    T: Eq + BitsOwned + Number,
+    T: Copy + Eq + BitsOwned,
 {
     #[inline]
     fn set_bit(&mut self, index: u32) {

@@ -2,12 +2,11 @@
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
-use crate::number::Number;
 use crate::BitsOwned;
 
 impl<T> Bits for [T]
 where
-    T: BitsOwned + Number,
+    T: Copy + BitsOwned,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
@@ -50,7 +49,7 @@ where
 
 impl<T> BitsMut for [T]
 where
-    T: BitsOwned + Number,
+    T: Copy + BitsOwned,
 {
     #[inline]
     fn set_bit(&mut self, index: u32) {

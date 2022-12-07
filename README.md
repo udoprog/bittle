@@ -39,6 +39,9 @@ assert!(array.iter_ones().eq([63, 94, 126, 127]));
 let n = 0b10001000_00000000_00000000_00000000u32;
 assert!(n.iter_ones().eq([0, 4]));
 
+let array_of_arrays: [[u8; 4]; 2] = [[8, 0, 0, 0], [0, 0, 128, 0]];
+assert!(array_of_arrays.iter_ones().eq([4, 48]));
+
 let mut vec: Vec<u32> = vec![0, 1, 2, 3];
 assert!(vec.iter_ones().eq([63, 94, 126, 127]));
 ```
@@ -53,6 +56,9 @@ use bittle::Bits;
 
 let array: [u32; 4] = bittle::set![63, 94, 126, 127];
 assert!(array.iter_ones().eq([63, 94, 126, 127]));
+
+let array_of_arrays: [[u8; 4]; 2] = bittle::set![4, 48];
+assert!(array_of_arrays.iter_ones().eq([4, 48]));
 
 let n: u32 = bittle::set![0, 4];
 assert!(n.iter_ones().eq([0, 4]));
