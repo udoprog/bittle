@@ -4,19 +4,23 @@ use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
 
-/// Basic numerical trait for the plumbing of a bit set. This ensures that only
-/// primitive types can be used as the basis of a bit set backed by an array,
-/// like `[u64; 4]` and not `[[u32; 2]; 4]`.
-pub trait Number: Copy {
-    /// Number of leading zeros.
-    fn leading_zeros(self) -> u32;
+mod sealed {
+    /// Basic numerical trait for the plumbing of a bit set. This ensures that only
+    /// primitive types can be used as the basis of a bit set backed by an array,
+    /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
+    pub trait Number: Copy {
+        /// Number of leading zeros.
+        fn leading_zeros(self) -> u32;
 
-    /// Number of leading ones.
-    fn leading_ones(self) -> u32;
+        /// Number of leading ones.
+        fn leading_ones(self) -> u32;
 
-    /// Count number of ones.
-    fn count_ones(self) -> u32;
+        /// Count number of ones.
+        fn count_ones(self) -> u32;
+    }
 }
+
+pub(crate) use self::sealed::Number;
 
 macro_rules! number {
     ($ty:ty) => {
@@ -37,6 +41,8 @@ macro_rules! number {
             }
         }
 
+        impl crate::bits::Sealed for $ty {}
+
         impl Bits for $ty {
             type IterOnes<'a> = IterOnes<Self> where Self: 'a;
             type IterZeros<'a> = IterZeros<Self> where Self: 'a;
@@ -52,17 +58,17 @@ macro_rules! number {
             }
 
             #[inline]
-            fn is_zeros(&self) -> bool {
+            fn all_zeros(&self) -> bool {
                 *self == Self::ZEROS
             }
 
             #[inline]
-            fn is_ones(&self) -> bool {
+            fn all_ones(&self) -> bool {
                 *self == Self::ONES
             }
 
             #[inline]
-            fn bit_test(&self, index: u32) -> bool {
+            fn test_bit(&self, index: u32) -> bool {
                 const ONE: $ty = !(<$ty>::MAX >> 1);
                 (*self & ONE.wrapping_shr(index)) != 0
             }
@@ -80,13 +86,13 @@ macro_rules! number {
 
         impl BitsMut for $ty {
             #[inline]
-            fn bit_set(&mut self, index: u32) {
+            fn set_bit(&mut self, index: u32) {
                 const ONE: $ty = !(<$ty>::MAX >> 1);
                 *self |= ONE.wrapping_shr(index);
             }
 
             #[inline]
-            fn bit_clear(&mut self, index: u32) {
+            fn clear_bit(&mut self, index: u32) {
                 const ONE: $ty = !(<$ty>::MAX >> 1);
                 *self &= !ONE.wrapping_shr(index);
             }
@@ -112,7 +118,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn bits_clear(&mut self) {
+            fn clear_bits(&mut self) {
                 *self = Self::ZEROS;
             }
         }
@@ -205,12 +211,12 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.bits.is_zeros() {
+        if self.bits.all_zeros() {
             return None;
         }
 
         let index = self.bits.leading_zeros();
-        self.bits.bit_clear(index);
+        self.bits.clear_bit(index);
         Some(index)
     }
 }
@@ -233,12 +239,12 @@ where
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        if self.bits.is_ones() {
+        if self.bits.all_ones() {
             return None;
         }
 
         let index = self.bits.leading_ones();
-        self.bits.bit_set(index);
+        self.bits.set_bit(index);
         Some(index)
     }
 }

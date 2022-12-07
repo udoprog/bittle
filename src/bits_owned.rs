@@ -15,8 +15,7 @@ use crate::bits_mut::BitsMut;
 /// * [`Bits`] for immutable operations.
 /// * [`BitsMut`] for mutable operations.
 ///
-/// [Bits]: crate::Bits
-/// [BitsMut]: crate::BitsMut
+/// [`Bits`]: crate::Bits
 ///
 /// # Examples
 ///
@@ -26,8 +25,8 @@ use crate::bits_mut::BitsMut;
 /// let a = u128::zeros();
 /// let b = bittle::set!(77);
 ///
-/// assert!(!a.bit_test(77));
-/// assert!(a.union(b).bit_test(77));
+/// assert!(!a.test_bit(77));
+/// assert!(a.union(b).test_bit(77));
 /// ```
 ///
 /// The bit set can also use arrays as its backing storage.
@@ -38,8 +37,8 @@ use crate::bits_mut::BitsMut;
 /// let a = <[u32; 4]>::zeros();
 /// let b = bittle::set!(77);
 ///
-/// assert!(!a.bit_test(77));
-/// assert!(a.union(b).bit_test(77));
+/// assert!(!a.test_bit(77));
+/// assert!(a.union(b).test_bit(77));
 /// ```
 pub trait BitsOwned: BitsMut {
     /// The number of bits in the bit set.
@@ -95,7 +94,7 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u128::zeros();
-    /// assert!(set.is_zeros());
+    /// assert!(set.all_zeros());
     /// assert_eq!(set.iter_ones().count(), 0);
     /// ```
     fn zeros() -> Self;
@@ -108,7 +107,7 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u128::ones();
-    /// assert!(set.is_ones());
+    /// assert!(set.all_ones());
     /// assert!(set.iter_ones().eq(0..128))
     /// ```
     fn ones() -> Self;

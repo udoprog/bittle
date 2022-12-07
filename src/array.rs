@@ -10,6 +10,7 @@ impl<T, const N: usize> BitsOwned for [T; N]
 where
     T: Eq + BitsOwned + Number,
 {
+    #[allow(clippy::cast_possible_truncation)]
     const BITS: u32 = match T::BITS.checked_mul(N as u32) {
         Some(value) => value,
         None => panic!("32-bit overflow in capacity"),
@@ -31,13 +32,13 @@ where
 
     #[inline]
     fn with_bit(mut self, bit: u32) -> Self {
-        self[(bit / T::BITS) as usize % N].bit_set(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].set_bit(bit % T::BITS);
         self
     }
 
     #[inline]
     fn without_bit(mut self, bit: u32) -> Self {
-        self[(bit / T::BITS) as usize % N].bit_clear(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].clear_bit(bit % T::BITS);
         self
     }
 
@@ -103,18 +104,18 @@ where
     }
 
     #[inline]
-    fn is_zeros(&self) -> bool {
+    fn all_zeros(&self) -> bool {
         *self == Self::ZEROS
     }
 
     #[inline]
-    fn is_ones(&self) -> bool {
+    fn all_ones(&self) -> bool {
         *self == Self::ONES
     }
 
     #[inline]
-    fn bit_test(&self, index: u32) -> bool {
-        self[(index / T::BITS) as usize % N].bit_test(index % T::BITS)
+    fn test_bit(&self, index: u32) -> bool {
+        self[(index / T::BITS) as usize % N].test_bit(index % T::BITS)
     }
 
     #[inline]
@@ -133,8 +134,8 @@ where
     T: Eq + BitsOwned + Number,
 {
     #[inline]
-    fn bit_set(&mut self, index: u32) {
-        self[(index / T::BITS) as usize % N].bit_set(index % T::BITS);
+    fn set_bit(&mut self, index: u32) {
+        self[(index / T::BITS) as usize % N].set_bit(index % T::BITS);
     }
 
     #[inline]
@@ -166,16 +167,16 @@ where
     }
 
     #[inline]
-    fn bit_clear(&mut self, index: u32) {
+    fn clear_bit(&mut self, index: u32) {
         if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.bit_clear(index % T::BITS);
+            bits.clear_bit(index % T::BITS);
         }
     }
 
     #[inline]
-    fn bits_clear(&mut self) {
+    fn clear_bits(&mut self) {
         for b in self {
-            b.bits_clear();
+            b.clear_bits();
         }
     }
 }
@@ -200,9 +201,9 @@ where
                 return None;
             };
 
-            if !bits.is_zeros() {
+            if !bits.all_zeros() {
                 let index = T::leading_zeros(*bits);
-                bits.bit_clear(index);
+                bits.clear_bit(index);
                 return Some(*offset + index);
             }
 

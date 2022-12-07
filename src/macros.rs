@@ -13,7 +13,7 @@
 macro_rules! set {
     ($($index:expr),* $(,)?) => {{
         let mut set = $crate::BitsOwned::ZEROS;
-        $($crate::BitsMut::bit_set(&mut set, $index);)*
+        $($crate::BitsMut::set_bit(&mut set, $index);)*
         set
     }};
 }

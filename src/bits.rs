@@ -3,6 +3,18 @@
 mod join_ones;
 pub use self::join_ones::JoinOnes;
 
+mod sealed {
+    pub trait Sealed {}
+
+    impl<T> Sealed for &mut T where T: ?Sized + crate::Bits {}
+    impl<T> Sealed for &T where T: ?Sized + crate::Bits {}
+    impl<T> Sealed for [T] {}
+    impl<T, const N: usize> Sealed for [T; N] {}
+    impl<T> Sealed for crate::set::Set<T> where T: ?Sized {}
+}
+
+pub(crate) use self::sealed::Sealed;
+
 /// Bitset immutable operations.
 ///
 /// This is implemented for primitive types such as:
@@ -15,8 +27,8 @@ pub use self::join_ones::JoinOnes;
 /// * [`BitsMut`] for mutable operations.
 /// * [`BitsOwned`] for owned operations.
 ///
-/// [BitsMut]: crate::BitsMut
-/// [BitsOwned]: crate::BitsOwned
+/// [`BitsMut`]: crate::BitsMut
+/// [`BitsOwned`]: crate::BitsOwned
 ///
 /// # Examples
 ///
@@ -31,10 +43,10 @@ pub use self::join_ones::JoinOnes;
 /// let mut b = 0u128;
 ///
 /// assert!(!a.iter_ones().eq(b.iter_ones()));
-/// b.bit_set(111);
+/// b.set_bit(111);
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
-pub trait Bits {
+pub trait Bits: Sealed {
     /// The iterator over ones in this bit pattern.
     ///
     /// See [`Bits::iter_ones`].
@@ -58,7 +70,7 @@ pub trait Bits {
     ///
     /// let mut a = 0u128;
     /// assert_eq!(a.count_ones(), 0);
-    /// a.bit_set(4);
+    /// a.set_bit(4);
     /// assert_eq!(a.count_ones(), 1);
     /// ```
     ///
@@ -69,7 +81,7 @@ pub trait Bits {
     ///
     /// let mut a = [0u128, 0];
     /// assert_eq!(a.count_ones(), 0);
-    /// a.bit_set(240);
+    /// a.set_bit(240);
     /// assert_eq!(a.count_ones(), 1);
     /// ```
     fn count_ones(&self) -> u32;
@@ -103,10 +115,10 @@ pub trait Bits {
     /// use bittle::Bits;
     ///
     /// let a: u32 = bittle::set![];
-    /// assert!(a.is_zeros());
+    /// assert!(a.all_zeros());
     ///
     /// let a: u32 = bittle::set![1];
-    /// assert!(!a.is_zeros());
+    /// assert!(!a.all_zeros());
     /// ```
     ///
     /// With arrays:
@@ -115,12 +127,12 @@ pub trait Bits {
     /// use bittle::Bits;
     ///
     /// let a: [u32; 2] = bittle::set![];
-    /// assert!(a.is_zeros());
+    /// assert!(a.all_zeros());
     ///
     /// let a: [u32; 2] = bittle::set![55];
-    /// assert!(!a.is_zeros());
+    /// assert!(!a.all_zeros());
     /// ```
-    fn is_zeros(&self) -> bool;
+    fn all_zeros(&self) -> bool;
 
     /// Test if bit set is full, or all ones.
     ///
@@ -130,11 +142,11 @@ pub trait Bits {
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut set = u128::ones();
-    /// assert!(set.is_ones());
-    /// set.bit_clear(4);
-    /// assert!(!set.is_ones());
+    /// assert!(set.all_ones());
+    /// set.clear_bit(4);
+    /// assert!(!set.all_ones());
     /// ```
-    fn is_ones(&self) -> bool;
+    fn all_ones(&self) -> bool;
 
     /// Test if the given bit is set.
     ///
@@ -144,10 +156,10 @@ pub trait Bits {
     /// use bittle::Bits;
     ///
     /// let a: u32 = bittle::set![];
-    /// assert!(!a.bit_test(32));
+    /// assert!(!a.test_bit(32));
     ///
     /// let a: u32 = bittle::set![32];
-    /// assert!(a.bit_test(32));
+    /// assert!(a.test_bit(32));
     /// ```
     ///
     /// # Examples
@@ -156,12 +168,12 @@ pub trait Bits {
     /// use bittle::Bits;
     ///
     /// let a: [u32; 2] = bittle::set![];
-    /// assert!(!a.bit_test(55));
+    /// assert!(!a.test_bit(55));
     ///
     /// let a: [u32; 2] = bittle::set![55];
-    /// assert!(a.bit_test(55));
+    /// assert!(a.test_bit(55));
     /// ```
-    fn bit_test(&self, index: u32) -> bool;
+    fn test_bit(&self, index: u32) -> bool;
 
     /// Construct an iterator over ones in the bit set.
     ///
@@ -261,18 +273,18 @@ where
     }
 
     #[inline]
-    fn is_zeros(&self) -> bool {
-        (**self).is_zeros()
+    fn all_zeros(&self) -> bool {
+        (**self).all_zeros()
     }
 
     #[inline]
-    fn is_ones(&self) -> bool {
-        (**self).is_ones()
+    fn all_ones(&self) -> bool {
+        (**self).all_ones()
     }
 
     #[inline]
-    fn bit_test(&self, index: u32) -> bool {
-        (**self).bit_test(index)
+    fn test_bit(&self, index: u32) -> bool {
+        (**self).test_bit(index)
     }
 
     #[inline]
@@ -309,18 +321,18 @@ where
     }
 
     #[inline]
-    fn is_zeros(&self) -> bool {
-        (**self).is_zeros()
+    fn all_zeros(&self) -> bool {
+        (**self).all_zeros()
     }
 
     #[inline]
-    fn is_ones(&self) -> bool {
-        (**self).is_ones()
+    fn all_ones(&self) -> bool {
+        (**self).all_ones()
     }
 
     #[inline]
-    fn bit_test(&self, index: u32) -> bool {
-        (**self).bit_test(index)
+    fn test_bit(&self, index: u32) -> bool {
+        (**self).test_bit(index)
     }
 
     #[inline]

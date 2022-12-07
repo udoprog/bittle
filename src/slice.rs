@@ -23,18 +23,18 @@ where
     }
 
     #[inline]
-    fn is_zeros(&self) -> bool {
-        self.iter().all(Bits::is_zeros)
+    fn all_zeros(&self) -> bool {
+        self.iter().all(Bits::all_zeros)
     }
 
     #[inline]
-    fn is_ones(&self) -> bool {
-        self.iter().all(Bits::is_ones)
+    fn all_ones(&self) -> bool {
+        self.iter().all(Bits::all_ones)
     }
 
     #[inline]
-    fn bit_test(&self, index: u32) -> bool {
-        self[((index / T::BITS) as usize % self.len())].bit_test(index % T::BITS)
+    fn test_bit(&self, index: u32) -> bool {
+        self[((index / T::BITS) as usize % self.len())].test_bit(index % T::BITS)
     }
 
     #[inline]
@@ -53,8 +53,8 @@ where
     T: BitsOwned + Number,
 {
     #[inline]
-    fn bit_set(&mut self, index: u32) {
-        self[((index / T::BITS) as usize % self.len())].bit_set(index % T::BITS);
+    fn set_bit(&mut self, index: u32) {
+        self[((index / T::BITS) as usize % self.len())].set_bit(index % T::BITS);
     }
 
     #[inline]
@@ -86,16 +86,16 @@ where
     }
 
     #[inline]
-    fn bit_clear(&mut self, index: u32) {
+    fn clear_bit(&mut self, index: u32) {
         if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.bit_clear(index % T::BITS);
+            bits.clear_bit(index % T::BITS);
         }
     }
 
     #[inline]
-    fn bits_clear(&mut self) {
+    fn clear_bits(&mut self) {
         for b in self {
-            b.bits_clear();
+            b.clear_bits();
         }
     }
 }
@@ -128,9 +128,9 @@ where
         loop {
             let (bits, offset) = self.current.as_mut()?;
 
-            if !bits.is_zeros() {
+            if !bits.all_zeros() {
                 let index = bits.leading_zeros();
-                bits.bit_clear(index);
+                bits.clear_bit(index);
                 return Some(*offset + index);
             }
 
@@ -167,9 +167,9 @@ where
         loop {
             let (bits, offset) = self.current.as_mut()?;
 
-            if !bits.is_ones() {
+            if !bits.all_ones() {
                 let index = bits.leading_ones();
-                bits.bit_set(index);
+                bits.set_bit(index);
                 return Some(*offset + index);
             }
 

@@ -12,8 +12,7 @@ use crate::bits::Bits;
 /// * [`Bits`] for immutable operations.
 /// * [`BitsOwned`] for owned operations.
 ///
-/// [Bits]: crate::Bits
-/// [BitsOwned]: crate::BitsOwned
+/// [`BitsOwned`]: crate::BitsOwned
 ///
 /// # Examples
 ///
@@ -28,7 +27,7 @@ use crate::bits::Bits;
 /// let mut b = 0u128;
 ///
 /// assert!(!a.iter_ones().eq(b.iter_ones()));
-/// b.bit_set(111);
+/// b.set_bit(111);
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 pub trait BitsMut: Bits {
@@ -40,11 +39,11 @@ pub trait BitsMut: Bits {
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut a = 0u32;
-    /// assert!(!a.bit_test(32));
-    /// a.bit_set(0);
-    /// assert!(a.bit_test(32));
-    /// a.bit_clear(32);
-    /// assert!(!a.bit_test(0));
+    /// assert!(!a.test_bit(32));
+    /// a.set_bit(0);
+    /// assert!(a.test_bit(32));
+    /// a.clear_bit(32);
+    /// assert!(!a.test_bit(0));
     /// ```
     ///
     /// # Examples
@@ -54,23 +53,23 @@ pub trait BitsMut: Bits {
     ///
     /// let mut a = u128::ones();
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
     ///
-    /// a.bit_clear(1);
+    /// a.clear_bit(1);
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(!a.test_bit(1));
+    /// assert!(a.test_bit(127));
     ///
-    /// a.bit_set(1);
+    /// a.set_bit(1);
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
     /// ```
-    fn bit_set(&mut self, index: u32);
+    fn set_bit(&mut self, index: u32);
 
     /// Unset the given bit.
     ///
@@ -80,11 +79,11 @@ pub trait BitsMut: Bits {
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut a = 0u32;
-    /// assert!(!a.bit_test(32));
-    /// a.bit_set(0);
-    /// assert!(a.bit_test(32));
-    /// a.bit_clear(32);
-    /// assert!(!a.bit_test(0));
+    /// assert!(!a.test_bit(32));
+    /// a.set_bit(0);
+    /// assert!(a.test_bit(32));
+    /// a.clear_bit(32);
+    /// assert!(!a.test_bit(0));
     /// ```
     ///
     /// # Examples
@@ -94,23 +93,23 @@ pub trait BitsMut: Bits {
     ///
     /// let mut a = u128::ones();
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
     ///
-    /// a.bit_clear(1);
+    /// a.clear_bit(1);
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(!a.test_bit(1));
+    /// assert!(a.test_bit(127));
     ///
-    /// a.bit_set(1);
+    /// a.set_bit(1);
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
     /// ```
-    fn bit_clear(&mut self, index: u32);
+    fn clear_bit(&mut self, index: u32);
 
     /// Clear the entire bit pattern.
     ///
@@ -121,23 +120,23 @@ pub trait BitsMut: Bits {
     ///
     /// let mut a = u128::ones();
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
     ///
-    /// a.bits_clear();
+    /// a.clear_bits();
     ///
-    /// assert!(!a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(!a.bit_test(127));
+    /// assert!(!a.test_bit(0));
+    /// assert!(!a.test_bit(1));
+    /// assert!(!a.test_bit(127));
     ///
-    /// a.bit_set(1);
+    /// a.set_bit(1);
     ///
-    /// assert!(!a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(!a.bit_test(127));
+    /// assert!(!a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(!a.test_bit(127));
     /// ```
-    fn bits_clear(&mut self);
+    fn clear_bits(&mut self);
 
     /// Modify the current set in place so that it becomes a union of this and
     /// another set.
@@ -297,18 +296,18 @@ where
     T: ?Sized + BitsMut,
 {
     #[inline]
-    fn bit_set(&mut self, index: u32) {
-        (**self).bit_set(index);
+    fn set_bit(&mut self, index: u32) {
+        (**self).set_bit(index);
     }
 
     #[inline]
-    fn bit_clear(&mut self, index: u32) {
-        (**self).bit_clear(index);
+    fn clear_bit(&mut self, index: u32) {
+        (**self).clear_bit(index);
     }
 
     #[inline]
-    fn bits_clear(&mut self) {
-        (**self).bits_clear();
+    fn clear_bits(&mut self) {
+        (**self).clear_bits();
     }
 
     #[inline]

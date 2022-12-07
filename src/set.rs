@@ -72,11 +72,11 @@ use crate::bits_owned::BitsOwned;
 ///
 /// let mut a = Set::<u128>::zeros();
 ///
-/// assert!(!a.bit_test(1));
-/// a.bit_set(1);
-/// assert!(a.bit_test(1));
-/// a.bit_clear(1);
-/// assert!(!a.bit_test(1));
+/// assert!(!a.test_bit(1));
+/// a.set_bit(1);
+/// assert!(a.test_bit(1));
+/// a.clear_bit(1);
+/// assert!(!a.test_bit(1));
 /// ```
 ///
 /// The bit set can also use arrays as its backing storage.
@@ -86,11 +86,11 @@ use crate::bits_owned::BitsOwned;
 ///
 /// let mut a = Set::<[u64; 16]>::zeros();
 ///
-/// assert!(!a.bit_test(172));
-/// a.bit_set(172);
-/// assert!(a.bit_test(172));
-/// a.bit_clear(172);
-/// assert!(!a.bit_test(172));
+/// assert!(!a.test_bit(172));
+/// a.set_bit(172);
+/// assert!(a.test_bit(172));
+/// a.clear_bit(172);
+/// assert!(!a.test_bit(172));
 /// ```
 ///
 /// We can use the iterator of each set to compare bit sets of different kinds:
@@ -101,10 +101,10 @@ use crate::bits_owned::BitsOwned;
 /// let mut a = Set::<[u64; 2]>::zeros();
 /// let mut b = Set::<u128>::zeros();
 ///
-/// a.bit_set(111);
+/// a.set_bit(111);
 /// assert!(!a.iter_ones().eq(b.iter_ones()));
 ///
-/// b.bit_set(111);
+/// b.set_bit(111);
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 #[derive(Clone, Copy)]
@@ -168,7 +168,7 @@ where
     ///
     /// let mut set = Set::from_mut(&mut values);
     /// assert!(set.iter_ones().eq([0, 12]));
-    /// set.bit_set(4);
+    /// set.set_bit(4);
     ///
     /// assert_eq!(&values[..], &[0b10001000u8, 0b00001000u8]);
     /// ```
@@ -196,12 +196,100 @@ where
     ///
     /// let mut a = Set::<u32>::zeros();
     ///
-    /// assert!(a.is_zeros());
-    /// a.bit_set(0);
-    /// assert!(!a.is_zeros());
+    /// assert!(a.all_zeros());
+    /// a.set_bit(0);
+    /// assert!(!a.all_zeros());
     /// ```
     fn default() -> Self {
         Self { bits: T::ZEROS }
+    }
+}
+
+impl<T> Bits for Set<T>
+where
+    T: ?Sized + Bits,
+{
+    type IterOnes<'a> = T::IterOnes<'a>
+    where
+        Self: 'a;
+
+    type IterZeros<'a> = T::IterZeros<'a>
+    where
+        Self: 'a;
+
+    #[inline]
+    fn count_ones(&self) -> u32 {
+        self.bits.count_ones()
+    }
+
+    #[inline]
+    fn bits_capacity(&self) -> u32 {
+        self.bits.bits_capacity()
+    }
+
+    #[inline]
+    fn all_ones(&self) -> bool {
+        self.bits.all_ones()
+    }
+
+    #[inline]
+    fn all_zeros(&self) -> bool {
+        self.bits.all_zeros()
+    }
+
+    #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        self.bits.test_bit(index)
+    }
+
+    #[inline]
+    fn iter_ones(&self) -> T::IterOnes<'_> {
+        self.bits.iter_ones()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> T::IterZeros<'_> {
+        self.bits.iter_zeros()
+    }
+}
+
+impl<T> BitsMut for Set<T>
+where
+    T: ?Sized + BitsMut,
+{
+    #[inline]
+    fn set_bit(&mut self, index: u32) {
+        self.bits.set_bit(index);
+    }
+
+    #[inline]
+    fn clear_bit(&mut self, index: u32) {
+        self.bits.clear_bit(index);
+    }
+
+    #[inline]
+    fn clear_bits(&mut self) {
+        self.bits.clear_bits();
+    }
+
+    #[inline]
+    fn union_assign(&mut self, other: &Self) {
+        self.bits.union_assign(&other.bits);
+    }
+
+    #[inline]
+    fn conjunction_assign(&mut self, other: &Self) {
+        self.bits.conjunction_assign(&other.bits);
+    }
+
+    #[inline]
+    fn difference_assign(&mut self, other: &Self) {
+        self.bits.difference_assign(&other.bits);
+    }
+
+    #[inline]
+    fn symmetric_difference_assign(&mut self, other: &Self) {
+        self.bits.symmetric_difference_assign(&other.bits);
     }
 }
 
@@ -270,94 +358,6 @@ where
     #[inline]
     fn into_iter_ones(self) -> T::IntoIterOnes {
         self.bits.into_iter_ones()
-    }
-}
-
-impl<T> Bits for Set<T>
-where
-    T: ?Sized + Bits,
-{
-    type IterOnes<'a> = T::IterOnes<'a>
-    where
-        Self: 'a;
-
-    type IterZeros<'a> = T::IterZeros<'a>
-    where
-        Self: 'a;
-
-    #[inline]
-    fn count_ones(&self) -> u32 {
-        self.bits.count_ones()
-    }
-
-    #[inline]
-    fn bits_capacity(&self) -> u32 {
-        self.bits.bits_capacity()
-    }
-
-    #[inline]
-    fn is_ones(&self) -> bool {
-        self.bits.is_ones()
-    }
-
-    #[inline]
-    fn is_zeros(&self) -> bool {
-        self.bits.is_zeros()
-    }
-
-    #[inline]
-    fn bit_test(&self, index: u32) -> bool {
-        self.bits.bit_test(index)
-    }
-
-    #[inline]
-    fn iter_ones(&self) -> T::IterOnes<'_> {
-        self.bits.iter_ones()
-    }
-
-    #[inline]
-    fn iter_zeros(&self) -> T::IterZeros<'_> {
-        self.bits.iter_zeros()
-    }
-}
-
-impl<T> BitsMut for Set<T>
-where
-    T: ?Sized + BitsMut,
-{
-    #[inline]
-    fn bit_set(&mut self, index: u32) {
-        self.bits.bit_set(index);
-    }
-
-    #[inline]
-    fn bit_clear(&mut self, index: u32) {
-        self.bits.bit_clear(index);
-    }
-
-    #[inline]
-    fn bits_clear(&mut self) {
-        self.bits.bits_clear();
-    }
-
-    #[inline]
-    fn union_assign(&mut self, other: &Self) {
-        self.bits.union_assign(&other.bits);
-    }
-
-    #[inline]
-    fn conjunction_assign(&mut self, other: &Self) {
-        self.bits.conjunction_assign(&other.bits);
-    }
-
-    #[inline]
-    fn difference_assign(&mut self, other: &Self) {
-        self.bits.difference_assign(&other.bits);
-    }
-
-    #[inline]
-    fn symmetric_difference_assign(&mut self, other: &Self) {
-        self.bits.symmetric_difference_assign(&other.bits);
     }
 }
 
