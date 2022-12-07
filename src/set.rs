@@ -7,9 +7,12 @@ use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
 
-/// Convenience wrapper around anything implementing [Bits], [BitsMut], or
-/// [BitsOwned] providing the wrapped type with behaviors you'd expected out of
-/// a set-like container.
+/// Convenience wrapper around bitsets providing the wrapped type with behaviors
+/// you'd expected out of a set-like container.
+///
+/// <br>
+///
+/// ## Debugging
 ///
 /// One reason one might want to use this wrapper is to have a
 /// [Debug][fmt::Debug] implementation which shows which bits are actually in
@@ -27,6 +30,8 @@ use crate::bits_owned::BitsOwned;
 ///
 /// <br>
 ///
+/// ## Standard iteration
+///
 /// This also provides unambigious implementations of [`IntoIterator`] which
 /// delegates to [`Bits::iter_ones`] and the like avoiding potential confusion
 /// when using an array as a set:
@@ -42,6 +47,8 @@ use crate::bits_owned::BitsOwned;
 /// ```
 ///
 /// <br>
+///
+/// ## Standard operators
 ///
 /// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
 /// [`BitXor`], and [`BitOrAssign`], [`BitAndAssign`], [`BitXorAssign`]
@@ -73,6 +80,8 @@ use crate::bits_owned::BitsOwned;
 /// ```
 ///
 /// <br>
+///
+/// ## Equality and comparison
 ///
 /// It also ensures that for operations that can be, are generic over bitwise
 /// indexes, allowing different kinds of bitsets to be compared:
@@ -111,7 +120,7 @@ use crate::bits_owned::BitsOwned;
 ///
 /// [`BTreeSet<u32>`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
 ///
-/// # Examples
+/// # More Examples
 ///
 /// ```
 /// use bittle::{Bits, BitsMut, BitsOwned, Set};
