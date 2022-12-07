@@ -7,8 +7,9 @@ use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
 
-/// A convenience wrapper around a [Bits] which itself implements [Bits] and
-/// a number of useful traits.
+/// Convenience wrapper around anything implementing [Bits], [BitsMut], or
+/// [BitsOwned] providing the wrapped type with behaviors you'd expected out of
+/// a set-like container.
 ///
 /// One reason one might want to use this wrapper is to have a
 /// [Debug][fmt::Debug] implementation which shows which bits are actually in
@@ -24,8 +25,23 @@ use crate::bits_owned::BitsOwned;
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 /// ```
 ///
-/// This also provides unambigious implementations of [`IntoIterator`], whereas
-/// arrays provide one themselves while primitive numbers do not.
+/// <br>
+///
+/// This also provides unambigious implementations of [`IntoIterator`] which
+/// delegates to [`Bits::iter_ones`] and the like avoiding potential confusion
+/// when using an array as a set:
+///
+/// ```
+/// use bittle::Set;
+///
+/// let array = [0b00010000u8, 0b0u8];
+/// assert!(array.into_iter().eq([16, 0]));
+///
+/// let set = Set::new(array);
+/// assert!(set.into_iter().eq([3]));
+/// ```
+///
+/// <br>
 ///
 /// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
 /// [`BitXor`], and [`BitOrAssign`], [`BitAndAssign`], [`BitXorAssign`]
@@ -56,14 +72,44 @@ use crate::bits_owned::BitsOwned;
 /// assert!(set3.iter_ones().eq([1, 110]));
 /// ```
 ///
-/// It also ensures that all operations are bitwise, so it makes equality
-/// checking two different kinds of sets possible:
+/// <br>
+///
+/// It also ensures that for operations that can be, are generic over bitwise
+/// indexes, allowing different kinds of bitsets to be compared:
 ///
 /// ```
 /// use bittle::Set;
-/// assert_eq!(Set::new(0b00001000u8), Set::new(0b00001000_00000000u16));
-/// assert_eq!(Set::new(0b00001000u8), Set::from_ref(&[0b00001000u8, 0b00000000u8]));
+/// let a = 0b00001000_10000000_00000000_00000000u32;
+/// let b = 0b00001000_10000000u16;
+/// let c = vec![0b00001000u8, 0b10000000u8];
+///
+/// assert_eq!(Set::new(a), Set::new(b));
+/// assert_eq!(Set::new(a), Set::from_ref(&c[..]));
+///
+/// let d = 0b11111111_10000000u16;
+/// assert!(Set::new(d) < Set::new(a));
+/// assert!(Set::new(d) < Set::new(b));
+/// assert!(Set::new(d) < Set::from_ref(&c[..]));
 /// ```
+///
+/// Note that if this result seems peculiar to you, consider that a bitset is
+/// actually an *ordered set*, so it would mimic the behavior of
+/// [`BTreeSet<u32>`] where `u32` are the indexes in
+/// the set rather than a direct numerical comparison:
+///
+/// ```
+/// use std::collections::BTreeSet;
+/// let mut a = BTreeSet::new();
+/// let mut b = BTreeSet::new();
+///
+/// a.insert(0u32);
+/// a.insert(1u32);
+/// b.insert(1u32);
+///
+/// assert!(a < b);
+/// ```
+///
+/// [`BTreeSet<u32>`]: https://doc.rust-lang.org/std/collections/struct.BTreeSet.html
 ///
 /// # Examples
 ///
@@ -398,12 +444,13 @@ where
 
 impl<T> cmp::Eq for Set<T> where T: ?Sized + Bits {}
 
-impl<T> cmp::PartialOrd for Set<T>
+impl<T, U> cmp::PartialOrd<U> for Set<T>
 where
     T: ?Sized + Bits,
+    U: ?Sized + Bits,
 {
     #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+    fn partial_cmp(&self, other: &U) -> Option<cmp::Ordering> {
         self.iter_ones().partial_cmp(other.iter_ones())
     }
 }
