@@ -19,7 +19,7 @@ Add `bittle` as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bittle = "0.3.5"
+bittle = "0.4.0"
 ```
 
 <br>
@@ -43,7 +43,9 @@ let mut vec: Vec<u32> = vec![0, 1, 2, 3];
 assert!(vec.iter_ones().eq([63, 94, 126, 127]));
 ```
 
-We also provide the [`set!`] macro, which is a zero-cost convenience macro to
+<br>
+
+We provide the [`set!`] macro, which is a zero-cost convenience method of
 constructing primitive forms of bit sets:
 
 ```rust
@@ -55,6 +57,8 @@ assert!(array.iter_ones().eq([63, 94, 126, 127]));
 let n: u32 = bittle::set![0, 4];
 assert!(n.iter_ones().eq([0, 4]));
 ```
+
+<br>
 
 Since a vector is not a primitive bit set, it could instead make use of
 [`BitsMut`] directly:
@@ -70,6 +74,8 @@ vec.set_bit(127);
 assert!(vec.iter_ones().eq([63, 94, 126, 127]));
 ```
 
+<br>
+
 Due to how broadly these traits are implemented, we also try to avoid using
 names which are commonly used in other APIs, instead opt for bit-specific
 terminology such as:
@@ -82,8 +88,6 @@ terminology such as:
   suffix when operating over *all* bits.
 
 ```rust
-use std::mem;
-
 use bittle::{Bits, BitsMut};
 
 let mut set = [0u16; 2];
@@ -101,6 +105,8 @@ set.clear_bits();
 assert!(set.all_zeros());
 ```
 
+<br>
+
 Some other interesting operations, such as [`Bits::join_ones`] are available,
 allowing bitsets to act like masks over other iterators:
 
@@ -115,6 +121,8 @@ assert!(m.join_ones(&elements).eq([&10]));
 m.set_bit(2);
 assert!(m.join_ones(&elements).eq([&10, &101]));
 ```
+
+<br>
 
 [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
 [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
