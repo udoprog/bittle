@@ -278,6 +278,11 @@ where
     }
 
     #[inline]
+    fn count_zeros(&self) -> u32 {
+        self.bits.count_zeros()
+    }
+
+    #[inline]
     fn bits_capacity(&self) -> u32 {
         self.bits.bits_capacity()
     }

@@ -86,6 +86,31 @@ pub trait Bits: Sealed {
     /// ```
     fn count_ones(&self) -> u32;
 
+    /// Get the number of ones in the set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut};
+    ///
+    /// let mut a = 0u128;
+    /// assert_eq!(a.count_zeros(), 128);
+    /// a.set_bit(4);
+    /// assert_eq!(a.count_zeros(), 127);
+    /// ```
+    ///
+    /// With arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut};
+    ///
+    /// let mut a = [0u128, 0];
+    /// assert_eq!(a.count_zeros(), 256);
+    /// a.set_bit(240);
+    /// assert_eq!(a.count_zeros(), 255);
+    /// ```
+    fn count_zeros(&self) -> u32;
+
     /// Get the capacity of the underlying set.
     ///
     /// # Examples
@@ -268,6 +293,11 @@ where
     }
 
     #[inline]
+    fn count_zeros(&self) -> u32 {
+        (**self).count_zeros()
+    }
+
+    #[inline]
     fn bits_capacity(&self) -> u32 {
         (**self).bits_capacity()
     }
@@ -313,6 +343,11 @@ where
     #[inline]
     fn count_ones(&self) -> u32 {
         (**self).count_ones()
+    }
+
+    #[inline]
+    fn count_zeros(&self) -> u32 {
+        (**self).count_zeros()
     }
 
     #[inline]

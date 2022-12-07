@@ -154,6 +154,11 @@ macro_rules! number {
             }
 
             #[inline]
+            fn count_zeros(&self) -> u32 {
+                <$ty>::count_zeros(*self)
+            }
+
+            #[inline]
             fn bits_capacity(&self) -> u32 {
                 Self::BITS
             }

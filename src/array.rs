@@ -104,6 +104,11 @@ where
     }
 
     #[inline]
+    fn count_zeros(&self) -> u32 {
+        self.iter().map(Bits::count_zeros).sum()
+    }
+
+    #[inline]
     fn bits_capacity(&self) -> u32 {
         Self::BITS
     }
