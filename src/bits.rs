@@ -28,10 +28,17 @@
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 pub trait Bits {
-    /// The iterator over this bit pattern.
+    /// The iterator over ones in this bit pattern.
     ///
     /// See [Bits::iter_ones].
     type IterOnes<'a>: Iterator<Item = u32>
+    where
+        Self: 'a;
+
+    /// The iterator over zeros in this bit pattern.
+    ///
+    /// See [Bits::iter_zeros].
+    type IterZeros<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
@@ -413,7 +420,7 @@ pub trait Bits {
     /// ```
     fn symmetric_difference_assign(&mut self, other: &Self);
 
-    /// Construct an iterator over ones that are set in the bit set.
+    /// Construct an iterator over ones in the bit set.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
@@ -435,6 +442,29 @@ pub trait Bits {
     /// assert!(set.iter_ones().eq([4, 67, 71]));
     /// ```
     fn iter_ones(&self) -> Self::IterOnes<'_>;
+
+    /// Construct an iterator over zeros in the bit set.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: u8 = bittle::set![3, 7];
+    /// assert!(set.iter_zeros().eq([0, 1, 2, 4, 5, 6]));
+    /// ```
+    ///
+    /// A larger bit set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: [u8; 2] = bittle::set![3, 7, 13, 14, 15];
+    /// assert!(set.iter_zeros().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// ```
+    fn iter_zeros(&self) -> Self::IterZeros<'_>;
 
     /// Join this bit set with an iterator, creating an iterator that only
     /// yields the elements which are set to ones.

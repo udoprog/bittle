@@ -3,7 +3,7 @@
 use crate::bits::Bits;
 use crate::number::Number;
 use crate::owned_bits::OwnedBits;
-use crate::slice::IterOnes;
+use crate::slice::{IterOnes, IterZeros};
 
 impl<T, const N: usize> OwnedBits for [T; N]
 where
@@ -92,6 +92,7 @@ where
     T: Eq + OwnedBits + Number,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
+    type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
 
     #[inline]
     fn bits_len(&self) -> u32 {
@@ -174,6 +175,11 @@ where
     #[inline]
     fn iter_ones(&self) -> Self::IterOnes<'_> {
         IterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
     }
 }
 

@@ -22,7 +22,6 @@
 //! assert!(array.bit_test(63));
 //!
 //! let mut vector: Vec<u8> = vec![0, 1, 2, 3];
-//! dbg!(vector.iter_ones().collect::<Vec<_>>());
 //! assert!(vector.iter_ones().eq([8, 17, 24, 25]));
 //!
 //! vector.bit_set(20);

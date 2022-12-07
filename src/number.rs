@@ -10,6 +10,9 @@ pub trait Number: Copy {
     /// Number of trailing zeros.
     fn trailing_zeros(self) -> u32;
 
+    /// Number of trailing ones.
+    fn trailing_ones(self) -> u32;
+
     /// Count number of ones.
     fn count_ones(self) -> u32;
 }
@@ -23,6 +26,11 @@ macro_rules! number {
             }
 
             #[inline]
+            fn trailing_ones(self) -> u32 {
+                <Self>::trailing_ones(self)
+            }
+
+            #[inline]
             fn count_ones(self) -> u32 {
                 <Self>::count_ones(self)
             }
@@ -30,6 +38,7 @@ macro_rules! number {
 
         impl Bits for $ty {
             type IterOnes<'a> = IterOnes<Self> where Self: 'a;
+            type IterZeros<'a> = IterZeros<Self> where Self: 'a;
 
             #[inline]
             fn bits_len(&self) -> u32 {
@@ -97,6 +106,11 @@ macro_rules! number {
             #[inline]
             fn iter_ones(&self) -> Self::IterOnes<'_> {
                 IterOnes { bits: *self }
+            }
+
+            #[inline]
+            fn iter_zeros(&self) -> Self::IterZeros<'_> {
+                IterZeros { bits: *self }
             }
         }
 
@@ -170,7 +184,7 @@ number!(i64);
 number!(u128);
 number!(i128);
 
-/// An iterator over the ones in a primitive number.
+/// An iterator over ones in a primitive number.
 #[derive(Clone, Copy)]
 #[repr(transparent)]
 pub struct IterOnes<T>
@@ -194,6 +208,34 @@ where
 
         let index = self.bits.trailing_zeros();
         self.bits.bit_clear(index);
+        Some(index)
+    }
+}
+
+/// An iterator over zeros in a primitive number.
+#[derive(Clone, Copy)]
+#[repr(transparent)]
+pub struct IterZeros<T>
+where
+    T: Number,
+{
+    bits: T,
+}
+
+impl<T> Iterator for IterZeros<T>
+where
+    T: OwnedBits + Number,
+{
+    type Item = u32;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bits.is_ones() {
+            return None;
+        }
+
+        let index = self.bits.trailing_ones();
+        self.bits.bit_set(index);
         Some(index)
     }
 }

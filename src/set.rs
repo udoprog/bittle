@@ -224,6 +224,10 @@ where
     where
         Self: 'a;
 
+    type IterZeros<'a> = T::IterZeros<'a>
+    where
+        Self: 'a;
+
     #[inline]
     fn bits_len(&self) -> u32 {
         self.bits.bits_len()
@@ -287,6 +291,11 @@ where
     #[inline]
     fn iter_ones(&self) -> T::IterOnes<'_> {
         self.bits.iter_ones()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> T::IterZeros<'_> {
+        self.bits.iter_zeros()
     }
 }
 

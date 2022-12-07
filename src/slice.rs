@@ -9,6 +9,7 @@ where
     T: OwnedBits + Number,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
+    type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
 
     #[inline]
     fn bits_len(&self) -> u32 {
@@ -92,9 +93,14 @@ where
     fn iter_ones(&self) -> Self::IterOnes<'_> {
         IterOnes::new(IntoIterator::into_iter(self))
     }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
+    }
 }
 
-/// A borrowing iterator over the bits set to ones in a slice.
+/// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
 pub struct IterOnes<'a, T> {
     iter: core::slice::Iter<'a, T>,
@@ -125,6 +131,45 @@ where
             if !bits.is_zeros() {
                 let index = bits.trailing_zeros();
                 bits.bit_clear(index);
+                return Some(*offset + index);
+            }
+
+            self.current = Some((*self.iter.next()?, *offset + T::BITS));
+        }
+    }
+}
+
+/// A borrowing iterator over the bits set to one in a slice.
+#[derive(Clone)]
+pub struct IterZeros<'a, T> {
+    iter: core::slice::Iter<'a, T>,
+    current: Option<(T, u32)>,
+}
+
+impl<'a, T> IterZeros<'a, T>
+where
+    T: Copy,
+{
+    pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
+        let current = iter.next().map(|v| (*v, 0));
+        Self { iter, current }
+    }
+}
+
+impl<'a, T> Iterator for IterZeros<'a, T>
+where
+    T: OwnedBits + Number,
+{
+    type Item = u32;
+
+    #[inline]
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            let (bits, offset) = self.current.as_mut()?;
+
+            if !bits.is_ones() {
+                let index = bits.trailing_ones();
+                bits.bit_set(index);
                 return Some(*offset + index);
             }
 
