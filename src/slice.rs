@@ -33,18 +33,12 @@ where
 
     #[inline]
     fn bit_test(&self, index: u32) -> bool {
-        if let Some(bits) = self.get((index / T::BITS) as usize) {
-            return bits.bit_test(index % T::BITS);
-        }
-
-        false
+        self[((index / T::BITS) as usize % self.len())].bit_test(index % T::BITS)
     }
 
     #[inline]
     fn bit_set(&mut self, index: u32) {
-        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.bit_set(index % T::BITS);
-        }
+        self[((index / T::BITS) as usize % self.len())].bit_set(index % T::BITS);
     }
 
     #[inline]
