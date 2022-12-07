@@ -3,7 +3,7 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -13,3 +13,16 @@ jobs:
         override: true
         profile: minimal
     - run: cargo test
+
+  build_shr:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+        profile: minimal
+    - run: cargo build
+      env:
+        RUSTFLAGS: --cfg bittle_shr

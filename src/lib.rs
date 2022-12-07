@@ -24,9 +24,37 @@
 //!
 //! ## Guide
 //!
-//! This crate defines the [`Bits`], [`BitsMut`], and [`BitsOwned`] traits which
-//! allows for generically interacting bit sets over existing Rust types such as
-//! `u32`, `[u32; 4]`, or `&[u32]`:
+//! A bit is always identified by a [`u32`] by its index, and the exact location
+//! for primitive numbers is that the least significant bit corresponds to the
+//! lowest index, and the most significant bit is the highest ([see issue #2]).
+//! This is called "shift left indexing" and doesn't correspond with what
+//! literals look like when reading them left-to-right:
+//!
+//! ```text
+//! 0b0010_0010u8
+//!     ^    ^- index 1
+//!     '------ index 5
+//! ```
+//!
+//! It gets a bit more confusing when considering arrays, since each element in
+//! the array defines a span of bits which does increase left-to-right:
+//!
+//! ```text
+//!  0 --------- 8  8 -------- 15
+//! [0b0010_0010u8, 0b1000_0000u8]
+//!      ^    ^       ^- index 15
+//!      |    '--------- index 1
+//!      '-------------- index 5
+//! ```
+//!
+//! > **Note**: shift right indexing is available experimentally under the
+//! > `--cfg bittle_shr` flag for benchmarking.
+//!
+//! <br>
+//!
+//! To interact with these bits we define the [`Bits`], [`BitsMut`], and
+//! [`BitsOwned`] traits. These traits are implemented for primitive types such
+//! as `u32`, `[u32; 4]`, or `&[u32]`:
 //!
 //! ```
 //! use bittle::Bits;
@@ -46,8 +74,8 @@
 //!
 //! <br>
 //!
-//! We provide the [`set!`] macro, which is a zero-cost convenience method of
-//! constructing primitive forms of bit sets:
+//! We also provide the [`set!`] macro, which is a zero-cost convenience method
+//! for constructing primitive forms of bit sets:
 //!
 //! ```
 //! use bittle::Bits;
@@ -129,6 +157,7 @@
 //!
 //! <br>
 //!
+//! [see issue #2]: https://github.com/udoprog/bittle/pull/2
 //! [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
 //! [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 //! [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
