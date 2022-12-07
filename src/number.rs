@@ -9,6 +9,12 @@ mod sealed {
     /// primitive types can be used as the basis of a bit set backed by an array,
     /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
     pub trait Number: Copy {
+        /// Turn an index into a mask.
+        fn mask(index: u32) -> Self;
+
+        /// Turn an index into a reverse mask.
+        fn mask_rev(index: u32) -> Self;
+
         /// Number of leading zeros.
         fn leading_zeros(self) -> u32;
 
@@ -41,6 +47,18 @@ macro_rules! number {
     ($ty:ty) => {
         impl Number for $ty {
             #[inline]
+            fn mask(index: u32) -> Self {
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                ONE.wrapping_shr(index)
+            }
+
+            #[inline]
+            fn mask_rev(index: u32) -> Self {
+                const ONE: $ty = 1 as $ty;
+                ONE.wrapping_shl(index)
+            }
+
+            #[inline]
             fn leading_zeros(self) -> u32 {
                 <Self>::leading_zeros(self)
             }
@@ -72,14 +90,12 @@ macro_rules! number {
 
             #[inline]
             fn set_bit_rev(&mut self, index: u32) {
-                const ONE: $ty = 1 as $ty;
-                *self |= ONE.wrapping_shl(index);
+                *self |= <$ty>::mask_rev(index);
             }
 
             #[inline]
             fn clear_bit_rev(&mut self, index: u32) {
-                const ONE: $ty = 1 as $ty;
-                *self &= !ONE.wrapping_shl(index);
+                *self &= !<$ty>::mask_rev(index);
             }
         }
 
@@ -111,8 +127,7 @@ macro_rules! number {
 
             #[inline]
             fn test_bit(&self, index: u32) -> bool {
-                const ONE: $ty = !(<$ty>::MAX >> 1);
-                (*self & ONE.wrapping_shr(index)) != 0
+                *self & <$ty>::mask(index) != 0
             }
 
             #[inline]
@@ -129,14 +144,12 @@ macro_rules! number {
         impl BitsMut for $ty {
             #[inline]
             fn set_bit(&mut self, index: u32) {
-                const ONE: $ty = !(<$ty>::MAX >> 1);
-                *self |= ONE.wrapping_shr(index);
+                *self |= <$ty>::mask(index);
             }
 
             #[inline]
             fn clear_bit(&mut self, index: u32) {
-                const ONE: $ty = !(<$ty>::MAX >> 1);
-                *self &= !ONE.wrapping_shr(index);
+                *self &= !<$ty>::mask(index);
             }
 
             #[inline]
@@ -185,14 +198,12 @@ macro_rules! number {
 
             #[inline]
             fn with_bit(self, bit: u32) -> Self {
-                const ONE: $ty = !(<$ty>::MAX >> 1);
-                self | ONE.wrapping_shr(bit)
+                self | <$ty>::mask(bit)
             }
 
             #[inline]
             fn without_bit(self, bit: u32) -> Self {
-                const ONE: $ty = !(<$ty>::MAX >> 1);
-                self & !ONE.wrapping_shr(bit)
+                self & !<$ty>::mask(bit)
             }
 
             #[inline]
