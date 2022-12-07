@@ -1,12 +1,13 @@
 //! [Bits] implementation and associated types for slices.
 
 use crate::bits::Bits;
+use crate::bits_mut::BitsMut;
 use crate::number::Number;
-use crate::OwnedBits;
+use crate::BitsOwned;
 
 impl<T> Bits for [T]
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
@@ -36,6 +37,21 @@ where
         self[((index / T::BITS) as usize % self.len())].bit_test(index % T::BITS)
     }
 
+    #[inline]
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        IterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
+    }
+}
+
+impl<T> BitsMut for [T]
+where
+    T: BitsOwned + Number,
+{
     #[inline]
     fn bit_set(&mut self, index: u32) {
         self[((index / T::BITS) as usize % self.len())].bit_set(index % T::BITS);
@@ -82,16 +98,6 @@ where
             b.bits_clear();
         }
     }
-
-    #[inline]
-    fn iter_ones(&self) -> Self::IterOnes<'_> {
-        IterOnes::new(IntoIterator::into_iter(self))
-    }
-
-    #[inline]
-    fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        IterZeros::new(IntoIterator::into_iter(self))
-    }
 }
 
 /// A borrowing iterator over the bits set to one in a slice.
@@ -113,7 +119,7 @@ where
 
 impl<'a, T> Iterator for IterOnes<'a, T>
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type Item = u32;
 
@@ -123,7 +129,7 @@ where
             let (bits, offset) = self.current.as_mut()?;
 
             if !bits.is_zeros() {
-                let index = bits.trailing_zeros();
+                let index = bits.leading_zeros();
                 bits.bit_clear(index);
                 return Some(*offset + index);
             }
@@ -152,7 +158,7 @@ where
 
 impl<'a, T> Iterator for IterZeros<'a, T>
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type Item = u32;
 
@@ -162,7 +168,7 @@ where
             let (bits, offset) = self.current.as_mut()?;
 
             if !bits.is_ones() {
-                let index = bits.trailing_ones();
+                let index = bits.leading_ones();
                 bits.bit_set(index);
                 return Some(*offset + index);
             }

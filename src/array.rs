@@ -1,13 +1,14 @@
 //! [Bits] implementation and associated types for arrays.
 
 use crate::bits::Bits;
+use crate::bits_mut::BitsMut;
+use crate::bits_owned::BitsOwned;
 use crate::number::Number;
-use crate::owned_bits::OwnedBits;
 use crate::slice::{IterOnes, IterZeros};
 
-impl<T, const N: usize> OwnedBits for [T; N]
+impl<T, const N: usize> BitsOwned for [T; N]
 where
-    T: Eq + OwnedBits + Number,
+    T: Eq + BitsOwned + Number,
 {
     const BITS: u32 = T::BITS * N as u32;
     const ZEROS: Self = [T::ZEROS; N];
@@ -89,7 +90,7 @@ where
 
 impl<T, const N: usize> Bits for [T; N]
 where
-    T: Eq + OwnedBits + Number,
+    T: Eq + BitsOwned + Number,
 {
     type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
@@ -119,6 +120,21 @@ where
         self[(index / T::BITS) as usize % N].bit_test(index % T::BITS)
     }
 
+    #[inline]
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        IterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
+    }
+}
+
+impl<T, const N: usize> BitsMut for [T; N]
+where
+    T: Eq + BitsOwned + Number,
+{
     #[inline]
     fn bit_set(&mut self, index: u32) {
         self[(index / T::BITS) as usize % N].bit_set(index % T::BITS)
@@ -165,16 +181,6 @@ where
             b.bits_clear();
         }
     }
-
-    #[inline]
-    fn iter_ones(&self) -> Self::IterOnes<'_> {
-        IterOnes::new(IntoIterator::into_iter(self))
-    }
-
-    #[inline]
-    fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        IterZeros::new(IntoIterator::into_iter(self))
-    }
 }
 
 /// An owned iterator over the bits set to ones in an array.
@@ -186,7 +192,7 @@ pub struct IntoIterOnes<T, const N: usize> {
 
 impl<T, const N: usize> Iterator for IntoIterOnes<T, N>
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type Item = u32;
 
@@ -198,7 +204,7 @@ where
             };
 
             if !bits.is_zeros() {
-                let index = T::trailing_zeros(*bits);
+                let index = T::leading_zeros(*bits);
                 bits.bit_clear(index);
                 return Some(*offset + index);
             }

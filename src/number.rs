@@ -1,17 +1,18 @@
 //! [Bits] implementation and associated types for numbers.
 
 use crate::bits::Bits;
-use crate::owned_bits::OwnedBits;
+use crate::bits_mut::BitsMut;
+use crate::bits_owned::BitsOwned;
 
 /// Basic numerical trait for the plumbing of a bit set. This ensures that only
 /// primitive types can be used as the basis of a bit set backed by an array,
 /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
 pub trait Number: Copy {
-    /// Number of trailing zeros.
-    fn trailing_zeros(self) -> u32;
+    /// Number of leading zeros.
+    fn leading_zeros(self) -> u32;
 
-    /// Number of trailing ones.
-    fn trailing_ones(self) -> u32;
+    /// Number of leading ones.
+    fn leading_ones(self) -> u32;
 
     /// Count number of ones.
     fn count_ones(self) -> u32;
@@ -21,13 +22,13 @@ macro_rules! number {
     ($ty:ty) => {
         impl Number for $ty {
             #[inline]
-            fn trailing_zeros(self) -> u32 {
-                <Self>::trailing_zeros(self)
+            fn leading_zeros(self) -> u32 {
+                <Self>::leading_zeros(self)
             }
 
             #[inline]
-            fn trailing_ones(self) -> u32 {
-                <Self>::trailing_ones(self)
+            fn leading_ones(self) -> u32 {
+                <Self>::leading_ones(self)
             }
 
             #[inline]
@@ -62,20 +63,32 @@ macro_rules! number {
 
             #[inline]
             fn bit_test(&self, index: u32) -> bool {
-                const ONE: $ty = 1;
-                (*self & ONE.wrapping_shl(index)) != 0
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                (*self & ONE.wrapping_shr(index)) != 0
             }
 
             #[inline]
+            fn iter_ones(&self) -> Self::IterOnes<'_> {
+                IterOnes { bits: *self }
+            }
+
+            #[inline]
+            fn iter_zeros(&self) -> Self::IterZeros<'_> {
+                IterZeros { bits: *self }
+            }
+        }
+
+        impl BitsMut for $ty {
+            #[inline]
             fn bit_set(&mut self, index: u32) {
-                const ONE: $ty = 1;
-                *self |= ONE.wrapping_shl(index);
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                *self |= ONE.wrapping_shr(index);
             }
 
             #[inline]
             fn bit_clear(&mut self, index: u32) {
-                const ONE: $ty = 1;
-                *self &= !ONE.wrapping_shl(index);
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                *self &= !ONE.wrapping_shr(index);
             }
 
             #[inline]
@@ -102,19 +115,9 @@ macro_rules! number {
             fn bits_clear(&mut self) {
                 *self = Self::ZEROS;
             }
-
-            #[inline]
-            fn iter_ones(&self) -> Self::IterOnes<'_> {
-                IterOnes { bits: *self }
-            }
-
-            #[inline]
-            fn iter_zeros(&self) -> Self::IterZeros<'_> {
-                IterZeros { bits: *self }
-            }
         }
 
-        impl OwnedBits for $ty {
+        impl BitsOwned for $ty {
             const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
             const ZEROS: Self = 0;
             const ONES: Self = !0;
@@ -133,14 +136,14 @@ macro_rules! number {
 
             #[inline]
             fn with_bit(self, bit: u32) -> Self {
-                const ONE: $ty = 1;
-                self | ONE.wrapping_shl(bit)
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                self | ONE.wrapping_shr(bit)
             }
 
             #[inline]
             fn without_bit(self, bit: u32) -> Self {
-                const ONE: $ty = 1;
-                self & !ONE.wrapping_shl(bit)
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                self & !ONE.wrapping_shr(bit)
             }
 
             #[inline]
@@ -196,7 +199,7 @@ where
 
 impl<T> Iterator for IterOnes<T>
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type Item = u32;
 
@@ -206,7 +209,7 @@ where
             return None;
         }
 
-        let index = self.bits.trailing_zeros();
+        let index = self.bits.leading_zeros();
         self.bits.bit_clear(index);
         Some(index)
     }
@@ -224,7 +227,7 @@ where
 
 impl<T> Iterator for IterZeros<T>
 where
-    T: OwnedBits + Number,
+    T: BitsOwned + Number,
 {
     type Item = u32;
 
@@ -234,7 +237,7 @@ where
             return None;
         }
 
-        let index = self.bits.trailing_ones();
+        let index = self.bits.leading_ones();
         self.bits.bit_set(index);
         Some(index)
     }

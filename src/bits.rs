@@ -1,5 +1,8 @@
 //! Traits which define the behaviors of a bit set.
 
+mod join_ones;
+pub use self::join_ones::JoinOnes;
+
 /// Bitset operations.
 ///
 /// This is implemented for primitive types such as:
@@ -8,8 +11,8 @@
 /// * Slices of numerical primitives, such as `&[u32]`.
 ///
 /// This does not include owned operations such as turning the bit set into an
-/// owned iterator using [OwnedBits::into_iter_ones], for more like that see
-/// [OwnedBits].
+/// owned iterator using [BitsOwned::into_iter_ones], for more like that see
+/// [BitsOwned].
 ///
 /// # Examples
 ///
@@ -18,7 +21,7 @@
 /// order:
 ///
 /// ```
-/// use bittle::Bits;
+/// use bittle::{Bits, BitsMut};
 ///
 /// let a: [u64; 2] = bittle::set![111];
 /// let mut b = 0u128;
@@ -47,7 +50,7 @@ pub trait Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::Bits;
+    /// use bittle::{Bits, BitsMut};
     ///
     /// let mut a = 0u128;
     /// assert_eq!(a.bits_len(), 0);
@@ -58,7 +61,7 @@ pub trait Bits {
     /// With arrays:
     ///
     /// ```
-    /// use bittle::Bits;
+    /// use bittle::{Bits, BitsMut};
     ///
     /// let mut a = [0u128, 0];
     /// assert_eq!(a.bits_len(), 0);
@@ -95,9 +98,10 @@ pub trait Bits {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut a = 0u128;
+    /// let a: u32 = bittle::set![];
     /// assert!(a.is_zeros());
-    /// a.bit_set(4);
+    ///
+    /// let a: u32 = bittle::set![1];
     /// assert!(!a.is_zeros());
     /// ```
     ///
@@ -106,9 +110,10 @@ pub trait Bits {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let mut a = [0u128; 2];
+    /// let a: [u32; 2] = bittle::set![];
     /// assert!(a.is_zeros());
-    /// a.bit_set(250);
+    ///
+    /// let a: [u32; 2] = bittle::set![55];
     /// assert!(!a.is_zeros());
     /// ```
     fn is_zeros(&self) -> bool;
@@ -118,7 +123,7 @@ pub trait Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut set = u128::ones();
     /// assert!(set.is_ones());
@@ -132,293 +137,27 @@ pub trait Bits {
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::Bits;
     ///
-    /// let mut a = 0u32;
+    /// let a: u32 = bittle::set![];
     /// assert!(!a.bit_test(32));
-    /// a.bit_set(0);
+    ///
+    /// let a: u32 = bittle::set![32];
     /// assert!(a.bit_test(32));
-    /// a.bit_clear(32);
-    /// assert!(!a.bit_test(0));
     /// ```
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::Bits;
     ///
-    /// let mut a = u128::ones();
+    /// let a: [u32; 2] = bittle::set![];
+    /// assert!(!a.bit_test(55));
     ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bit_clear(1);
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(a.bit_test(127));
+    /// let a: [u32; 2] = bittle::set![55];
+    /// assert!(a.bit_test(55));
     /// ```
     fn bit_test(&self, index: u32) -> bool;
-
-    /// Set the given bit.
-    ///
-    /// Indexes which are out of bounds will wrap around in the bitset.
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let mut a = 0u32;
-    /// assert!(!a.bit_test(32));
-    /// a.bit_set(0);
-    /// assert!(a.bit_test(32));
-    /// a.bit_clear(32);
-    /// assert!(!a.bit_test(0));
-    /// ```
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let mut a = u128::ones();
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bit_clear(1);
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bit_set(1);
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    /// ```
-    fn bit_set(&mut self, index: u32);
-
-    /// Unset the given bit.
-    ///
-    /// Indexes which are out of bounds will wrap around in the bitset.
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let mut a = 0u32;
-    /// assert!(!a.bit_test(32));
-    /// a.bit_set(0);
-    /// assert!(a.bit_test(32));
-    /// a.bit_clear(32);
-    /// assert!(!a.bit_test(0));
-    /// ```
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let mut a = u128::ones();
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bit_clear(1);
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bit_set(1);
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    /// ```
-    fn bit_clear(&mut self, index: u32);
-
-    /// Clear the entire bit pattern.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, OwnedBits};
-    ///
-    /// let mut a = u128::ones();
-    ///
-    /// assert!(a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(a.bit_test(127));
-    ///
-    /// a.bits_clear();
-    ///
-    /// assert!(!a.bit_test(0));
-    /// assert!(!a.bit_test(1));
-    /// assert!(!a.bit_test(127));
-    ///
-    /// a.bit_set(1);
-    ///
-    /// assert!(!a.bit_test(0));
-    /// assert!(a.bit_test(1));
-    /// assert!(!a.bit_test(127));
-    /// ```
-    fn bits_clear(&mut self);
-
-    /// Modify the current set in place so that it becomes a union of this and
-    /// another set.
-    ///
-    /// A union retains all elements from both sets.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitOrAssign`][core::ops::BitOrAssign] or `a |= b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// a.union_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([31, 62, 67]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// a.union_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([31, 62, 67]));
-    /// ```
-    fn union_assign(&mut self, other: &Self);
-
-    /// Modify the current set in place so that it becomes a conjunction of this
-    /// and another set.
-    ///
-    /// A conjunction keeps the elements which are in common between two sets.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitAndAssign`][core::ops::BitAndAssign] or `a &= b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// a.conjunction_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([31]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// a.conjunction_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([31]));
-    /// ```
-    fn conjunction_assign(&mut self, other: &Self);
-
-    /// Modify the current set in place so that it becomes a difference of this
-    /// and another set.
-    ///
-    /// This assigns the elements in the second set which are not part of the
-    /// first.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// let mut c = a;
-    /// c.difference_assign(&b);
-    ///
-    /// let mut d = b;
-    /// d.difference_assign(&a);
-    ///
-    /// assert_ne!(c, d);
-    ///
-    /// assert!(c.iter_ones().eq([62]));
-    /// assert!(d.iter_ones().eq([67]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// let mut c = a;
-    /// c.difference_assign(&b);
-    ///
-    /// let mut d = b;
-    /// d.difference_assign(&a);
-    ///
-    /// assert_ne!(c, d);
-    ///
-    /// assert!(c.iter_ones().eq([62]));
-    /// assert!(d.iter_ones().eq([67]));
-    /// ```
-    fn difference_assign(&mut self, other: &Self);
-
-    /// Modify the current set in place so that it becomes a symmetric
-    /// difference of this and another set.
-    ///
-    /// This retains elements which are unique to each set.
-    ///
-    /// In terms of numerical operations, this is equivalent to
-    /// [`BitXorAssign`][core::ops::BitXorAssign] or `a ^= b`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: u128 = bittle::set![31, 67];
-    /// let b: u128 = bittle::set![31, 62];
-    ///
-    /// a.symmetric_difference_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([62, 67]));
-    /// ```
-    ///
-    /// Using arrays:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: [u32; 4] = bittle::set![31, 67];
-    /// let b: [u32; 4] = bittle::set![31, 62];
-    ///
-    /// a.symmetric_difference_assign(&b);
-    ///
-    /// assert!(a.iter_ones().eq([62, 67]));
-    /// ```
-    fn symmetric_difference_assign(&mut self, other: &Self);
 
     /// Construct an iterator over ones in the bit set.
     ///
@@ -491,35 +230,102 @@ pub trait Bits {
         Self: Sized,
         I: IntoIterator,
     {
-        JoinOnes {
-            mask: self.iter_ones(),
-            right: iter.into_iter(),
-            last: 0,
-        }
+        JoinOnes::new(self.iter_ones(), iter.into_iter())
     }
 }
 
-/// A joined iterator.
-///
-/// Created using [Mask::join_ones].
-pub struct JoinOnes<A, B> {
-    mask: A,
-    right: B,
-    last: u32,
+impl<T> Bits for &T
+where
+    T: ?Sized + Bits,
+{
+    type IterOnes<'a> = T::IterOnes<'a>
+    where
+        Self: 'a;
+
+    type IterZeros<'a> = T::IterZeros<'a>
+    where
+        Self: 'a;
+
+    #[inline]
+    fn bits_len(&self) -> u32 {
+        (**self).bits_len()
+    }
+
+    #[inline]
+    fn bits_capacity(&self) -> u32 {
+        (**self).bits_capacity()
+    }
+
+    #[inline]
+    fn is_zeros(&self) -> bool {
+        (**self).is_zeros()
+    }
+
+    #[inline]
+    fn is_ones(&self) -> bool {
+        (**self).is_ones()
+    }
+
+    #[inline]
+    fn bit_test(&self, index: u32) -> bool {
+        (**self).bit_test(index)
+    }
+
+    #[inline]
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        (**self).iter_ones()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        (**self).iter_zeros()
+    }
 }
 
-impl<A, B> Iterator for JoinOnes<A, B>
+impl<T> Bits for &mut T
 where
-    A: Iterator<Item = u32>,
-    B: Iterator,
+    T: ?Sized + Bits,
 {
-    type Item = B::Item;
+    type IterOnes<'a> = T::IterOnes<'a>
+    where
+        Self: 'a;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let index = self.mask.next()?;
-        let offset = index - self.last;
-        let buf = self.right.nth(offset as usize)?;
-        self.last = index + 1;
-        Some(buf)
+    type IterZeros<'a> = T::IterZeros<'a>
+    where
+        Self: 'a;
+
+    #[inline]
+    fn bits_len(&self) -> u32 {
+        (**self).bits_len()
+    }
+
+    #[inline]
+    fn bits_capacity(&self) -> u32 {
+        (**self).bits_capacity()
+    }
+
+    #[inline]
+    fn is_zeros(&self) -> bool {
+        (**self).is_zeros()
+    }
+
+    #[inline]
+    fn is_ones(&self) -> bool {
+        (**self).is_ones()
+    }
+
+    #[inline]
+    fn bit_test(&self, index: u32) -> bool {
+        (**self).bit_test(index)
+    }
+
+    #[inline]
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        (**self).iter_ones()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        (**self).iter_zeros()
     }
 }

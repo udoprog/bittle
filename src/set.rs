@@ -4,8 +4,8 @@ use core::hash::{Hash, Hasher};
 use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
 
 use crate::bits::Bits;
-use crate::number::Number;
-use crate::owned_bits::OwnedBits;
+use crate::bits_mut::BitsMut;
+use crate::bits_owned::BitsOwned;
 
 /// A convenience wrapper around a [Bits] which itself implements [Bits] and
 /// a number of useful traits.
@@ -18,9 +18,9 @@ use crate::owned_bits::OwnedBits;
 /// use bittle::{Bits, Set};
 ///
 /// let set: u128 = bittle::set![1, 14];
-/// assert_eq!(format!("{set:?}"), "16386");
+/// assert_eq!(format!("{set:?}"), "85080976323951685521100712850600493056");
 ///
-/// let set: Set<u128> = bittle::set![1, 14];
+/// let set: Set<u128> = Set::new(set);
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 /// ```
 ///
@@ -29,8 +29,8 @@ use crate::owned_bits::OwnedBits;
 ///
 /// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
 /// [`BitXor`], and [`BitOrAssign`], [`BitAndAssign`], [`BitXorAssign`]
-/// implementations to work with. They each refer to [`OwnedBits::union`],
-/// [`OwnedBits::conjunction`], and [`OwnedBits::symmetric_difference`]
+/// implementations to work with. They each refer to [`BitsOwned::union`],
+/// [`BitsOwned::conjunction`], and [`BitsOwned::symmetric_difference`]
 /// respectively.
 ///
 /// ```
@@ -56,10 +56,19 @@ use crate::owned_bits::OwnedBits;
 /// assert!(set3.iter_ones().eq([1, 110]));
 /// ```
 ///
+/// It also ensures that all operations are bitwise, so it makes equality
+/// checking two different kinds of sets possible:
+///
+/// ```
+/// use bittle::Set;
+/// assert_eq!(Set::new(0b00001000u8), Set::new(0b00001000_00000000u16));
+/// assert_eq!(Set::new(0b00001000u8), Set::from_ref(&[0b00001000u8, 0b00000000u8]));
+/// ```
+///
 /// # Examples
 ///
 /// ```
-/// use bittle::{Bits, OwnedBits, Set};
+/// use bittle::{Bits, BitsMut, BitsOwned, Set};
 ///
 /// let mut a = Set::<u128>::zeros();
 ///
@@ -73,9 +82,9 @@ use crate::owned_bits::OwnedBits;
 /// The bit set can also use arrays as its backing storage.
 ///
 /// ```
-/// use bittle::{Bits, Set};
+/// use bittle::{Bits, BitsMut, BitsOwned, Set};
 ///
-/// let mut a = Set::<[u64; 16]>::new();
+/// let mut a = Set::<[u64; 16]>::zeros();
 ///
 /// assert!(!a.bit_test(172));
 /// a.bit_set(172);
@@ -87,7 +96,7 @@ use crate::owned_bits::OwnedBits;
 /// We can use the iterator of each set to compare bit sets of different kinds:
 ///
 /// ```
-/// use bittle::{Bits, OwnedBits, Set};
+/// use bittle::{Bits, BitsMut, BitsOwned, Set};
 ///
 /// let mut a = Set::<[u64; 2]>::zeros();
 /// let mut b = Set::<u128>::zeros();
@@ -100,7 +109,10 @@ use crate::owned_bits::OwnedBits;
 /// ```
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct Set<T> {
+pub struct Set<T>
+where
+    T: ?Sized,
+{
     bits: T,
 }
 
@@ -112,45 +124,90 @@ impl<T> Set<T> {
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::from_bits(0b00001001u32);
-    ///
-    /// assert!(!set.is_zeros());
-    /// assert!(set.bit_test(0));
-    /// assert!(!set.bit_test(1));
-    /// assert!(!set.bit_test(2));
-    /// assert!(set.bit_test(3));
+    /// let mut set = Set::new(0b00001001u32);
+    /// assert!(set.iter_ones().eq([28, 31]));
     /// ```
     #[inline]
-    pub const fn from_bits(bits: T) -> Self {
+    pub const fn new(bits: T) -> Self {
         Self { bits }
     }
 }
 
 impl<T> Set<T>
 where
-    T: OwnedBits,
+    T: ?Sized,
 {
-    /// Construct a new empty set.
+    /// Wrap a reference as a set.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut a = Set::<u32>::new();
+    /// let mut set = Set::from_ref(&[0b10000000u8, 0b00001000u8]);
+    /// assert!(set.iter_ones().eq([0, 12]));
+    /// ```
+    #[inline]
+    pub fn from_ref<U>(bits: &U) -> &Self
+    where
+        U: ?Sized + AsRef<T>,
+    {
+        // SAFETY: Reference provided as bits has the same memory layout as
+        // &Set<T>.
+        unsafe { &*(bits.as_ref() as *const _ as *const _) }
+    }
+
+    /// Wrap a mutable reference.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, Set};
+    ///
+    /// let mut values = [0b10000000u8, 0b00001000u8];
+    ///
+    /// let mut set = Set::from_mut(&mut values);
+    /// assert!(set.iter_ones().eq([0, 12]));
+    /// set.bit_set(4);
+    ///
+    /// assert_eq!(&values[..], &[0b10001000u8, 0b00001000u8]);
+    /// ```
+    #[inline]
+    pub fn from_mut<U>(bits: &mut U) -> &mut Self
+    where
+        U: ?Sized + AsMut<T>,
+    {
+        // SAFETY: Reference provided as bits has the same memory layout as &mut
+        // Set<T>.
+        unsafe { &mut *(bits.as_mut() as *mut _ as *mut _) }
+    }
+}
+
+impl<T> Default for Set<T>
+where
+    T: BitsOwned,
+{
+    /// Construct a new empty set.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned, Set};
+    ///
+    /// let mut a = Set::<u32>::zeros();
     ///
     /// assert!(a.is_zeros());
     /// a.bit_set(0);
     /// assert!(!a.is_zeros());
     /// ```
-    pub const fn new() -> Self {
+    fn default() -> Self {
         Self { bits: T::ZEROS }
     }
 }
 
-impl<T> OwnedBits for Set<T>
+impl<T> BitsOwned for Set<T>
 where
-    T: OwnedBits,
+    T: BitsOwned,
 {
     const BITS: u32 = T::BITS;
     const ONES: Self = Self { bits: T::ONES };
@@ -218,7 +275,7 @@ where
 
 impl<T> Bits for Set<T>
 where
-    T: Bits,
+    T: ?Sized + Bits,
 {
     type IterOnes<'a> = T::IterOnes<'a>
     where
@@ -254,6 +311,21 @@ where
     }
 
     #[inline]
+    fn iter_ones(&self) -> T::IterOnes<'_> {
+        self.bits.iter_ones()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> T::IterZeros<'_> {
+        self.bits.iter_zeros()
+    }
+}
+
+impl<T> BitsMut for Set<T>
+where
+    T: ?Sized + BitsMut,
+{
+    #[inline]
     fn bit_set(&mut self, index: u32) {
         self.bits.bit_set(index);
     }
@@ -287,33 +359,11 @@ where
     fn symmetric_difference_assign(&mut self, other: &Self) {
         self.bits.symmetric_difference_assign(&other.bits);
     }
-
-    #[inline]
-    fn iter_ones(&self) -> T::IterOnes<'_> {
-        self.bits.iter_ones()
-    }
-
-    #[inline]
-    fn iter_zeros(&self) -> T::IterZeros<'_> {
-        self.bits.iter_zeros()
-    }
-}
-
-impl<T> Set<T>
-where
-    T: Number,
-{
-    /// Perform a fast length calculation for Bitss specialized over numerical types.
-    #[inline]
-    #[allow(clippy::len_without_is_empty)]
-    pub fn bits_len(&self) -> u32 {
-        T::count_ones(self.bits)
-    }
 }
 
 impl<T> fmt::Debug for Set<T>
 where
-    T: OwnedBits,
+    T: ?Sized + Bits,
 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -321,41 +371,50 @@ where
     }
 }
 
-impl<T> cmp::PartialEq for Set<T>
+/// Flexible [`PartialEq`] implementation which allows for comparisons between different kinds of sets.
+///
+/// # Examples
+///
+/// ```
+/// use bittle::Set;
+/// assert_eq!(Set::new(0b00001000u8), Set::new(0b00001000_00000000u16));
+/// ```
+impl<T, U> cmp::PartialEq<U> for Set<T>
 where
-    T: cmp::PartialEq,
+    T: ?Sized + Bits,
+    U: ?Sized + Bits,
 {
     #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        self.bits.eq(&other.bits)
+    fn eq(&self, other: &U) -> bool {
+        self.iter_ones().eq(other.iter_ones())
     }
 }
 
-impl<T> cmp::Eq for Set<T> where T: cmp::Eq {}
+impl<T> cmp::Eq for Set<T> where T: ?Sized + Bits {}
 
 impl<T> cmp::PartialOrd for Set<T>
 where
-    T: cmp::PartialOrd,
+    T: ?Sized + Bits,
 {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        self.bits.partial_cmp(&other.bits)
+        self.iter_ones().partial_cmp(other.iter_ones())
     }
 }
 
 impl<T> cmp::Ord for Set<T>
 where
-    T: cmp::Ord,
+    T: ?Sized + Bits,
 {
     #[inline]
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.bits.cmp(&other.bits)
+        self.iter_ones().cmp(other.iter_ones())
     }
 }
 
 impl<T> Hash for Set<T>
 where
-    T: Hash,
+    T: ?Sized + Hash,
 {
     #[inline]
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -365,7 +424,7 @@ where
 
 impl<T> IntoIterator for Set<T>
 where
-    T: OwnedBits,
+    T: BitsOwned,
 {
     type IntoIter = T::IntoIterOnes;
     type Item = <Self::IntoIter as Iterator>::Item;
@@ -378,7 +437,7 @@ where
 
 impl<'a, T> IntoIterator for &'a Set<T>
 where
-    T: OwnedBits,
+    T: ?Sized + Bits,
 {
     type IntoIter = T::IterOnes<'a>;
     type Item = <Self::IntoIter as Iterator>::Item;
@@ -389,7 +448,10 @@ where
     }
 }
 
-impl<T> From<T> for Set<T> {
+impl<T> From<T> for Set<T>
+where
+    T: BitsOwned,
+{
     #[inline]
     fn from(bits: T) -> Self {
         Set { bits }
@@ -400,7 +462,7 @@ macro_rules! owned_ops {
     ($trait:ident::$n:ident, $name:ident<$t:ident>, $fn:ident) => {
         impl<$t> $trait<$name<$t>> for $name<$t>
         where
-            $t: Copy + OwnedBits,
+            $t: Copy + BitsOwned,
         {
             type Output = $name<$t>;
 
@@ -414,7 +476,7 @@ macro_rules! owned_ops {
 
         impl<$t> $trait<&$name<$t>> for $name<$t>
         where
-            $t: Copy + OwnedBits,
+            $t: Copy + BitsOwned,
         {
             type Output = $name<$t>;
 
@@ -428,7 +490,7 @@ macro_rules! owned_ops {
 
         impl<$t> $trait<$name<$t>> for &$name<$t>
         where
-            $t: Copy + OwnedBits,
+            $t: Copy + BitsOwned,
         {
             type Output = $name<$t>;
 
@@ -442,7 +504,7 @@ macro_rules! owned_ops {
 
         impl<$t> $trait<&$name<$t>> for &$name<$t>
         where
-            $t: Copy + OwnedBits,
+            $t: Copy + BitsOwned,
         {
             type Output = $name<$t>;
 
@@ -460,7 +522,7 @@ macro_rules! assign_ops {
     ($trait:ident::$n:ident, $name:ident<$t:ident>, $fn:ident) => {
         impl<$t> $trait<$name<$t>> for $name<$t>
         where
-            $t: Bits,
+            $t: BitsMut,
         {
             #[inline]
             fn $n(&mut self, rhs: $name<$t>) {
@@ -470,7 +532,7 @@ macro_rules! assign_ops {
 
         impl<$t> $trait<&$name<$t>> for $name<$t>
         where
-            $t: Bits,
+            $t: BitsMut,
         {
             #[inline]
             fn $n(&mut self, rhs: &$name<$t>) {
@@ -480,7 +542,7 @@ macro_rules! assign_ops {
 
         impl<$t> $trait<&$name<$t>> for &mut $name<$t>
         where
-            $t: Bits,
+            $t: BitsMut,
         {
             #[inline]
             fn $n(&mut self, rhs: &$name<$t>) {

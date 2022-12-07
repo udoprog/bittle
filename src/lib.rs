@@ -7,7 +7,7 @@
 //!
 //! The name `bittle` comes from `bit` and `little`. Small bitsets!
 //!
-//! This crate defines the [Bits] and [OwnedBits] traits which allows for
+//! This crate defines the [Bits] and [BitsOwned] traits which allows for
 //! generically interacting with and manipulating bit sets over types such as
 //! `u128`, `[u32; 4]`, or even slices like `&[u8]`.
 //!
@@ -15,17 +15,18 @@
 //! regular types, such as with arrays and vectors:
 //!
 //! ```
-//! use bittle::Bits;
+//! use bittle::{Bits, BitsMut};
 //!
-//! let array: [u32; 4] = bittle::set![4, 63, 71];
-//! assert!(array.iter_ones().eq([4, 63, 71]));
-//! assert!(array.bit_test(63));
+//! let set: [u32; 4] = bittle::set![4, 63, 71];
+//! assert!(set.iter_ones().eq([4, 63, 71]));
 //!
-//! let mut vector: Vec<u8> = vec![0, 1, 2, 3];
-//! assert!(vector.iter_ones().eq([8, 17, 24, 25]));
+//! let n = 0b10001000u8;
+//! assert!(n.iter_ones().eq([0, 4]));
 //!
-//! vector.bit_set(20);
-//! assert_eq!(vector, [0, 1, 18, 3]);
+//! let mut vec: Vec<u32> = vec![0, 1, 2, 3];
+//! assert!(vec.iter_ones().eq([63, 94, 126, 127]));
+//! vec.bit_set(20);
+//! assert_eq!(vec, [2048, 1, 2, 3]);
 //! ```
 //!
 //! <br>
@@ -57,7 +58,7 @@
 //! ```rust
 //! use std::mem;
 //!
-//! use bittle::Bits;
+//! use bittle::{Bits, BitsMut};
 //!
 //! let mut a = 0u64;
 //!
@@ -74,7 +75,7 @@
 //! allowing bitsets to act like masks over other iterators:
 //!
 //! ```rust
-//! use bittle::Bits;
+//! use bittle::{Bits, BitsMut};
 //!
 //! let elements = vec![10, 48, 101];
 //! let mut m = 0u128;
@@ -108,5 +109,8 @@ pub use self::set::Set;
 mod bits;
 pub use self::bits::Bits;
 
-mod owned_bits;
-pub use self::owned_bits::OwnedBits;
+mod bits_mut;
+pub use self::bits_mut::BitsMut;
+
+mod bits_owned;
+pub use self::bits_owned::BitsOwned;

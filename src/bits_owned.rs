@@ -1,4 +1,4 @@
-use crate::bits::Bits;
+use crate::bits_mut::BitsMut;
 
 /// Trait which abstracts over type capable of representing owned bit sets.
 ///
@@ -8,7 +8,7 @@ use crate::bits::Bits;
 /// # Examples
 ///
 /// ```
-/// use bittle::{Bits, OwnedBits};
+/// use bittle::{Bits, BitsOwned};
 ///
 /// let a = u128::zeros();
 /// let b = bittle::set!(77);
@@ -20,7 +20,7 @@ use crate::bits::Bits;
 /// The bit set can also use arrays as its backing storage.
 ///
 /// ```
-/// use bittle::{Bits, OwnedBits};
+/// use bittle::{Bits, BitsOwned};
 ///
 /// let a = <[u32; 4]>::zeros();
 /// let b = bittle::set!(77);
@@ -28,13 +28,13 @@ use crate::bits::Bits;
 /// assert!(!a.bit_test(77));
 /// assert!(a.union(b).bit_test(77));
 /// ```
-pub trait OwnedBits: Bits {
+pub trait BitsOwned: BitsMut {
     /// The number of bits in the bit set.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::OwnedBits;
+    /// use bittle::BitsOwned;
     ///
     /// assert_eq!(u32::BITS, 32);
     /// assert_eq!(<[u32; 4]>::BITS, 128);
@@ -43,12 +43,12 @@ pub trait OwnedBits: Bits {
 
     /// The bit pattern containing all zeros, or one that is empty.
     ///
-    /// See [OwnedBits::zeros].
+    /// See [BitsOwned::zeros].
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::OwnedBits;
+    /// use bittle::BitsOwned;
     ///
     /// assert_eq!(u32::ZEROS, 0);
     /// assert_eq!(<[u32; 4]>::ZEROS, [0, 0, 0, 0]);
@@ -57,12 +57,12 @@ pub trait OwnedBits: Bits {
 
     /// The bit pattern containing all ones, or one that is full.
     ///
-    /// See [OwnedBits::ones].
+    /// See [BitsOwned::ones].
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::OwnedBits;
+    /// use bittle::BitsOwned;
     ///
     /// assert_eq!(u32::ONES, u32::MAX);
     /// assert_eq!(<[u32; 4]>::ONES, [u32::MAX, u32::MAX, u32::MAX, u32::MAX]);
@@ -71,7 +71,7 @@ pub trait OwnedBits: Bits {
 
     /// Owning iterator over bits.
     ///
-    /// See [OwnedBits::into_iter_ones].
+    /// See [BitsOwned::into_iter_ones].
     type IntoIterOnes: Iterator<Item = u32>;
 
     /// Construct a bit set of all zeros, or one that is empty.
@@ -79,7 +79,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u128::zeros();
     /// assert!(set.is_zeros());
@@ -92,7 +92,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u128::ones();
     /// assert!(set.is_ones());
@@ -105,7 +105,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u128::zeros().with_bit(8).with_bit(12);
     /// assert!(set.iter_ones().eq([8, 12]))
@@ -114,7 +114,7 @@ pub trait OwnedBits: Bits {
     /// With arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = <[u32; 4]>::zeros().with_bit(8).with_bit(12);
     /// assert!(set.iter_ones().eq([8, 12]))
@@ -126,7 +126,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = u8::ones().without_bit(2);
     /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7]))
@@ -135,7 +135,7 @@ pub trait OwnedBits: Bits {
     /// With arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let set = <[u8; 2]>::ones().without_bit(2).without_bit(10);
     /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
@@ -152,7 +152,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: u128 = bittle::set![31, 67];
     /// let b: u128 = bittle::set![31, 62];
@@ -164,7 +164,7 @@ pub trait OwnedBits: Bits {
     /// Using arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: [u32; 4] = bittle::set![31, 67];
     /// let b: [u32; 4] = bittle::set![31, 62];
@@ -184,7 +184,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: u128 = bittle::set![31, 67];
     /// let b: u128 = bittle::set![31, 62];
@@ -196,7 +196,7 @@ pub trait OwnedBits: Bits {
     /// Using arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: [u32; 4] = bittle::set![31, 67];
     /// let b: [u32; 4] = bittle::set![31, 62];
@@ -214,7 +214,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Set, Bits, OwnedBits};
+    /// use bittle::{Set, Bits, BitsOwned};
     ///
     /// let a: u128 = bittle::set![31, 67];
     /// let b: u128 = bittle::set![31, 62];
@@ -226,7 +226,7 @@ pub trait OwnedBits: Bits {
     /// Using arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: [u32; 4] = bittle::set![31, 67];
     /// let b: [u32; 4] = bittle::set![31, 62];
@@ -246,7 +246,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: u128 = bittle::set![31, 67];
     /// let b: u128 = bittle::set![31, 62];
@@ -258,7 +258,7 @@ pub trait OwnedBits: Bits {
     /// Using arrays:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: [u32; 4] = bittle::set![31, 67];
     /// let b: [u32; 4] = bittle::set![31, 62];
@@ -275,7 +275,7 @@ pub trait OwnedBits: Bits {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: u128 = bittle::set![3, 7];
     /// assert!(a.into_iter_ones().eq([3, 7]));
@@ -284,7 +284,7 @@ pub trait OwnedBits: Bits {
     /// A larger bit set:
     ///
     /// ```
-    /// use bittle::{Bits, OwnedBits};
+    /// use bittle::{Bits, BitsOwned};
     ///
     /// let a: [u32; 4] = bittle::set![4, 63, 71];
     /// assert!(a.into_iter_ones().eq([4, 63, 71]));

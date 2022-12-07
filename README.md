@@ -9,7 +9,7 @@ A library for working with bitsets.
 
 The name `bittle` comes from `bit` and `little`. Small bitsets!
 
-This crate defines the [Bits] and [OwnedBits] traits which allows for
+This crate defines the [Bits] and [BitsOwned] traits which allows for
 generically interacting with and manipulating bit sets over types such as
 `u128`, `[u32; 4]`, or even slices like `&[u8]`.
 
