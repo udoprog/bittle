@@ -1,4 +1,4 @@
-//! [Bits] implementation and associated types for arrays.
+//! [Bits] associated types for primitive arrays.
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;

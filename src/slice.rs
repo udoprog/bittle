@@ -1,4 +1,4 @@
-//! [Bits] implementation and associated types for slices.
+//! [Bits] associated types for slices.
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;

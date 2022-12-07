@@ -1,4 +1,4 @@
-//! [Bits] implementation and associated types for numbers.
+//! [Bits] associated types for primitive numbers.
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
