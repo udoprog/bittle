@@ -8,25 +8,7 @@ mod sealed {
     /// Basic numerical trait for the plumbing of a bit set. This ensures that only
     /// primitive types can be used as the basis of a bit set backed by an array,
     /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
-    pub trait Number: Copy {
-        /// Turn an index into a mask.
-        fn mask(index: u32) -> Self;
-
-        /// Turn an index into a reverse mask.
-        fn mask_rev(index: u32) -> Self;
-
-        /// Number of leading zeros.
-        fn leading_zeros(self) -> u32;
-
-        /// Number of trailing zeros.
-        fn trailing_zeros(self) -> u32;
-
-        /// Number of leading ones.
-        fn leading_ones(self) -> u32;
-
-        /// Number of trailing ones.
-        fn trailing_ones(self) -> u32;
-
+    pub trait Number: Copy + super::NumberBits {
         /// Count number of ones.
         fn count_ones(self) -> u32;
 
@@ -39,13 +21,72 @@ mod sealed {
         /// Clear reverse bit.
         fn clear_bit_rev(&mut self, index: u32);
     }
+
+    /// Number plumbing that changes depending on the state of the `bittle_shr`
+    /// flag.
+    pub trait NumberBits {
+        /// Generate an overflowing mask for the given index.
+        fn mask(index: u32) -> Self;
+
+        /// Generate a reverse overflowing mask at the given index, that is at
+        /// the `BITS - index - 1` bit location.
+        fn mask_rev(index: u32) -> Self;
+
+        /// Count the number of "leading" ones.
+        fn ones(self) -> u32;
+
+        /// Count the number of "trailing" ones.
+        fn ones_rev(self) -> u32;
+
+        /// Count the number of "leading" zeros.
+        fn zeros(self) -> u32;
+
+        /// Count the number of "trailing" zeros.
+        fn zeros_rev(self) -> u32;
+    }
 }
 
-pub(crate) use self::sealed::Number;
+pub(crate) use self::sealed::{Number, NumberBits};
 
 macro_rules! number {
     ($ty:ty) => {
-        impl Number for $ty {
+        #[cfg(not(bittle_shr))]
+        impl NumberBits for $ty {
+            #[inline]
+            fn mask(index: u32) -> Self {
+                const ONE: $ty = 1 as $ty;
+                ONE.wrapping_shl(index)
+            }
+
+            #[inline]
+            fn mask_rev(index: u32) -> Self {
+                const ONE: $ty = !(<$ty>::MAX >> 1);
+                ONE.wrapping_shr(index)
+            }
+
+            #[inline]
+            fn ones(self) -> u32 {
+                <$ty>::trailing_ones(self)
+            }
+
+            #[inline]
+            fn ones_rev(self) -> u32 {
+                <$ty>::leading_ones(self)
+            }
+
+            #[inline]
+            fn zeros(self) -> u32 {
+                <$ty>::trailing_zeros(self)
+            }
+
+            #[inline]
+            fn zeros_rev(self) -> u32 {
+                <$ty>::leading_zeros(self)
+            }
+        }
+
+        #[cfg(bittle_shr)]
+        impl NumberBits for $ty {
             #[inline]
             fn mask(index: u32) -> Self {
                 const ONE: $ty = !(<$ty>::MAX >> 1);
@@ -59,25 +100,27 @@ macro_rules! number {
             }
 
             #[inline]
-            fn leading_zeros(self) -> u32 {
-                <Self>::leading_zeros(self)
+            fn ones(self) -> u32 {
+                <$ty>::leading_ones(self)
             }
 
             #[inline]
-            fn trailing_zeros(self) -> u32 {
-                <Self>::trailing_zeros(self)
+            fn ones_rev(self) -> u32 {
+                <$ty>::trailing_ones(self)
             }
 
             #[inline]
-            fn leading_ones(self) -> u32 {
-                <Self>::leading_ones(self)
+            fn zeros(self) -> u32 {
+                <$ty>::leading_zeros(self)
             }
 
             #[inline]
-            fn trailing_ones(self) -> u32 {
-                <Self>::trailing_ones(self)
+            fn zeros_rev(self) -> u32 {
+                <$ty>::trailing_zeros(self)
             }
+        }
 
+        impl Number for $ty {
             #[inline]
             fn count_ones(self) -> u32 {
                 <Self>::count_ones(self)
@@ -274,7 +317,7 @@ where
             return None;
         }
 
-        let index = self.bits.leading_zeros();
+        let index = self.bits.zeros();
         self.bits.clear_bit(index);
         Some(index)
     }
@@ -286,7 +329,8 @@ where
 ///
 /// ```
 /// use bittle::Bits;
-/// assert!(0b10001000u8.iter_ones().rev().eq([4, 0]));
+/// let n: u8 = bittle::set![0, 4];
+/// assert!(n.iter_ones().rev().eq([4, 0]));
 /// ```
 impl<T> DoubleEndedIterator for IterOnes<T>
 where
@@ -298,7 +342,7 @@ where
             return None;
         }
 
-        let index = self.bits.trailing_zeros();
+        let index = self.bits.zeros_rev();
         self.bits.clear_bit_rev(index);
         Some(T::BITS - index - 1)
     }
@@ -333,7 +377,7 @@ where
             return None;
         }
 
-        let index = self.bits.leading_ones();
+        let index = self.bits.ones();
         self.bits.set_bit(index);
         Some(index)
     }
@@ -355,7 +399,8 @@ where
 ///
 /// ```
 /// use bittle::Bits;
-/// assert!(0b10001000u8.iter_zeros().rev().eq([7, 6, 5, 3, 2, 1]));
+/// let n: u8 = bittle::set![0, 4];
+/// assert!(n.iter_zeros().rev().eq([7, 6, 5, 3, 2, 1]));
 /// ```
 impl<T> DoubleEndedIterator for IterZeros<T>
 where
@@ -367,7 +412,7 @@ where
             return None;
         }
 
-        let index = self.bits.trailing_ones();
+        let index = self.bits.ones_rev();
         self.bits.set_bit_rev(index);
         Some(T::BITS - index - 1)
     }
