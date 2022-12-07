@@ -81,16 +81,14 @@ where
 
     #[inline]
     fn into_iter_ones(self) -> Self::IntoIterOnes {
-        let mut iter = IntoIterator::into_iter(self);
-        let current = iter.next().map(|v| (v, 0));
-        IntoIterOnes { iter, current }
+        let iter = IntoIterator::into_iter(self);
+        IntoIterOnes::new(iter)
     }
 
     #[inline]
     fn into_iter_zeros(self) -> Self::IntoIterZeros {
-        let mut iter = IntoIterator::into_iter(self);
-        let current = iter.next().map(|v| (v, 0));
-        IntoIterZeros { iter, current }
+        let iter = IntoIterator::into_iter(self);
+        IntoIterZeros::new(iter)
     }
 }
 
@@ -191,62 +189,90 @@ where
 
 /// An owned iterator over the bits set to one in an array.
 #[derive(Clone)]
-pub struct IntoIterOnes<T, const N: usize> {
+pub struct IntoIterOnes<T, const N: usize>
+where
+    T: BitsOwned,
+{
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T, u32)>,
+    current: Option<(T::IntoIterOnes, u32)>,
+}
+
+impl<T, const N: usize> IntoIterOnes<T, N>
+where
+    T: BitsOwned,
+{
+    #[inline]
+    fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
+        let current = iter.next().map(|v| (v.into_iter_ones(), 0));
+        Self { iter, current }
+    }
 }
 
 impl<T, const N: usize> Iterator for IntoIterOnes<T, N>
 where
-    T: BitsOwned + Number,
+    T: BitsOwned,
 {
     type Item = u32;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let Some((bits, offset)) = &mut self.current else {
+            let Some((it, offset)) = &mut self.current else {
                 return None;
             };
 
-            if !bits.all_zeros() {
-                let index = T::leading_zeros(*bits);
-                bits.clear_bit(index);
-                return Some(*offset + index);
+            if let Some(index) = it.next() {
+                return offset.checked_add(index);
             }
 
-            self.current = Some((self.iter.next()?, *offset + T::BITS));
+            self.current = Some((
+                self.iter.next()?.into_iter_ones(),
+                offset.checked_add(T::BITS)?,
+            ));
         }
     }
 }
 
 /// An owned iterator over the bits set to zero in an array.
 #[derive(Clone)]
-pub struct IntoIterZeros<T, const N: usize> {
+pub struct IntoIterZeros<T, const N: usize>
+where
+    T: BitsOwned,
+{
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T, u32)>,
+    current: Option<(T::IntoIterZeros, u32)>,
+}
+
+impl<T, const N: usize> IntoIterZeros<T, N>
+where
+    T: BitsOwned,
+{
+    #[inline]
+    fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
+        let current = iter.next().map(|v| (v.into_iter_zeros(), 0));
+        Self { iter, current }
+    }
 }
 
 impl<T, const N: usize> Iterator for IntoIterZeros<T, N>
 where
-    T: BitsOwned + Number,
+    T: BitsOwned,
 {
     type Item = u32;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let Some((bits, offset)) = &mut self.current else {
+            let Some((it, offset)) = &mut self.current else {
                 return None;
             };
 
-            if !bits.all_ones() {
-                let index = T::leading_ones(*bits);
-                bits.set_bit(index);
-                return Some(*offset + index);
+            if let Some(index) = it.next() {
+                return offset.checked_add(index);
             }
 
-            self.current = Some((self.iter.next()?, *offset + T::BITS));
+            self.current = Some((
+                self.iter.next()?.into_iter_zeros(),
+                offset.checked_add(T::BITS)?,
+            ));
         }
     }
 }

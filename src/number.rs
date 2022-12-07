@@ -12,11 +12,26 @@ mod sealed {
         /// Number of leading zeros.
         fn leading_zeros(self) -> u32;
 
+        /// Number of trailing zeros.
+        fn trailing_zeros(self) -> u32;
+
         /// Number of leading ones.
         fn leading_ones(self) -> u32;
 
+        /// Number of trailing ones.
+        fn trailing_ones(self) -> u32;
+
         /// Count number of ones.
         fn count_ones(self) -> u32;
+
+        /// Count number of zeros.
+        fn count_zeros(self) -> u32;
+
+        /// Set reverse bit.
+        fn set_bit_rev(&mut self, index: u32);
+
+        /// Clear reverse bit.
+        fn clear_bit_rev(&mut self, index: u32);
     }
 }
 
@@ -31,13 +46,40 @@ macro_rules! number {
             }
 
             #[inline]
+            fn trailing_zeros(self) -> u32 {
+                <Self>::trailing_zeros(self)
+            }
+
+            #[inline]
             fn leading_ones(self) -> u32 {
                 <Self>::leading_ones(self)
             }
 
             #[inline]
+            fn trailing_ones(self) -> u32 {
+                <Self>::trailing_ones(self)
+            }
+
+            #[inline]
             fn count_ones(self) -> u32 {
                 <Self>::count_ones(self)
+            }
+
+            #[inline]
+            fn count_zeros(self) -> u32 {
+                <Self>::count_zeros(self)
+            }
+
+            #[inline]
+            fn set_bit_rev(&mut self, index: u32) {
+                const ONE: $ty = 1 as $ty;
+                *self |= ONE.wrapping_shl(index);
+            }
+
+            #[inline]
+            fn clear_bit_rev(&mut self, index: u32) {
+                const ONE: $ty = 1 as $ty;
+                *self &= !ONE.wrapping_shl(index);
             }
         }
 
@@ -227,19 +269,50 @@ where
     }
 }
 
+/// Double ended iterator over ones.
+///
+/// # Examples
+///
+/// ```
+/// use bittle::Bits;
+/// assert!(0b10001000u8.iter_ones().rev().eq([4, 0]));
+/// ```
+impl<T> DoubleEndedIterator for IterOnes<T>
+where
+    T: BitsOwned + Number,
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.bits.all_zeros() {
+            return None;
+        }
+
+        let index = self.bits.trailing_zeros();
+        self.bits.clear_bit_rev(index);
+        Some(T::BITS - index - 1)
+    }
+}
+
+impl<T> ExactSizeIterator for IterOnes<T>
+where
+    T: BitsOwned + Number,
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.bits.count_ones() as usize
+    }
+}
+
 /// An iterator over zeros in a primitive number.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct IterZeros<T>
-where
-    T: Number,
-{
+pub struct IterZeros<T> {
     bits: T,
 }
 
 impl<T> Iterator for IterZeros<T>
 where
-    T: BitsOwned + Number,
+    T: BitsMut + Number,
 {
     type Item = u32;
 
@@ -252,5 +325,39 @@ where
         let index = self.bits.leading_ones();
         self.bits.set_bit(index);
         Some(index)
+    }
+}
+
+impl<T> ExactSizeIterator for IterZeros<T>
+where
+    T: BitsMut + Number,
+{
+    #[inline]
+    fn len(&self) -> usize {
+        self.bits.count_zeros() as usize
+    }
+}
+
+/// Double ended iterator over zeros.
+///
+/// # Examples
+///
+/// ```
+/// use bittle::Bits;
+/// assert!(0b10001000u8.iter_zeros().rev().eq([7, 6, 5, 3, 2, 1]));
+/// ```
+impl<T> DoubleEndedIterator for IterZeros<T>
+where
+    T: BitsOwned + Number,
+{
+    #[inline]
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.bits.all_ones() {
+            return None;
+        }
+
+        let index = self.bits.trailing_ones();
+        self.bits.set_bit_rev(index);
+        Some(T::BITS - index - 1)
     }
 }

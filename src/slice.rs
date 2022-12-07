@@ -102,78 +102,90 @@ where
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterOnes<'a, T> {
+pub struct IterOnes<'a, T>
+where
+    T: Copy + BitsOwned,
+{
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T, u32)>,
+    current: Option<(T::IntoIterOnes, u32)>,
 }
 
 impl<'a, T> IterOnes<'a, T>
 where
-    T: Copy,
+    T: Copy + BitsOwned,
 {
+    #[inline]
     pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
-        let current = iter.next().map(|v| (*v, 0));
+        let current = iter.next().map(|v| (v.into_iter_ones(), 0));
         Self { iter, current }
     }
 }
 
 impl<'a, T> Iterator for IterOnes<'a, T>
 where
-    T: BitsOwned + Number,
+    T: Copy + BitsOwned,
 {
     type Item = u32;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let (bits, offset) = self.current.as_mut()?;
+            let Some((it, offset)) = &mut self.current else {
+                return None;
+            };
 
-            if !bits.all_zeros() {
-                let index = bits.leading_zeros();
-                bits.clear_bit(index);
-                return Some(*offset + index);
+            if let Some(index) = it.next() {
+                return offset.checked_add(index);
             }
 
-            self.current = Some((*self.iter.next()?, *offset + T::BITS));
+            self.current = Some((
+                self.iter.next()?.into_iter_ones(),
+                offset.checked_add(T::BITS)?,
+            ));
         }
     }
 }
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterZeros<'a, T> {
+pub struct IterZeros<'a, T>
+where
+    T: Copy + BitsOwned,
+{
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T, u32)>,
+    current: Option<(T::IntoIterZeros, u32)>,
 }
 
 impl<'a, T> IterZeros<'a, T>
 where
-    T: Copy,
+    T: Copy + BitsOwned,
 {
+    #[inline]
     pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
-        let current = iter.next().map(|v| (*v, 0));
+        let current = iter.next().map(|v| (v.into_iter_zeros(), 0));
         Self { iter, current }
     }
 }
 
 impl<'a, T> Iterator for IterZeros<'a, T>
 where
-    T: BitsOwned + Number,
+    T: Copy + BitsOwned,
 {
     type Item = u32;
 
-    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let (bits, offset) = self.current.as_mut()?;
+            let Some((it, offset)) = &mut self.current else {
+                return None;
+            };
 
-            if !bits.all_ones() {
-                let index = bits.leading_ones();
-                bits.set_bit(index);
-                return Some(*offset + index);
+            if let Some(index) = it.next() {
+                return offset.checked_add(index);
             }
 
-            self.current = Some((*self.iter.next()?, *offset + T::BITS));
+            self.current = Some((
+                self.iter.next()?.into_iter_zeros(),
+                offset.checked_add(T::BITS)?,
+            ));
         }
     }
 }
