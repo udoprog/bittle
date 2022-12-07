@@ -81,10 +81,15 @@ pub trait BitsOwned: BitsMut {
     /// ```
     const ONES: Self;
 
-    /// Owning iterator over bits.
+    /// Owning iterator over bits set to one.
     ///
     /// See [`BitsOwned::into_iter_ones`].
     type IntoIterOnes: Iterator<Item = u32>;
+
+    /// Owning iterator over bits set to zero.
+    ///
+    /// See [`BitsOwned::into_iter_zeros`].
+    type IntoIterZeros: Iterator<Item = u32>;
 
     /// Construct a bit set of all zeros, or one that is empty.
     ///
@@ -286,7 +291,7 @@ pub trait BitsOwned: BitsMut {
     #[must_use]
     fn symmetric_difference(self, other: Self) -> Self;
 
-    /// Construct an owning iterator over a bit set.
+    /// Construct an owning iterator over all ones in a set.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
@@ -299,7 +304,7 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_ones().eq([3, 7]));
     /// ```
     ///
-    /// A larger bit set:
+    /// Using arrays:
     ///
     /// ```
     /// use bittle::{Bits, BitsOwned};
@@ -308,4 +313,27 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_ones().eq([4, 63, 71]));
     /// ```
     fn into_iter_ones(self) -> Self::IntoIterOnes;
+
+    /// Construct an owning iterator over all zeros in a set.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: u16 = bittle::set![4, 7, 10];
+    /// assert!(a.into_iter_zeros().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// ```
+    ///
+    /// Using arrays:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: [u8; 2] = bittle::set![4, 7, 10];
+    /// assert!(a.into_iter_zeros().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// ```
+    fn into_iter_zeros(self) -> Self::IntoIterZeros;
 }

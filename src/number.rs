@@ -129,6 +129,7 @@ macro_rules! number {
             const ONES: Self = !0;
 
             type IntoIterOnes = IterOnes<Self>;
+            type IntoIterZeros = IterZeros<Self>;
 
             #[inline]
             fn zeros() -> Self {
@@ -175,6 +176,11 @@ macro_rules! number {
             #[inline]
             fn into_iter_ones(self) -> Self::IntoIterOnes {
                 IterOnes { bits: self }
+            }
+
+            #[inline]
+            fn into_iter_zeros(self) -> Self::IntoIterZeros {
+                IterZeros { bits: self }
             }
         }
     };

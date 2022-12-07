@@ -302,6 +302,7 @@ where
     const ZEROS: Self = Self { bits: T::ZEROS };
 
     type IntoIterOnes = T::IntoIterOnes;
+    type IntoIterZeros = T::IntoIterZeros;
 
     #[inline]
     fn zeros() -> Self {
@@ -358,6 +359,11 @@ where
     #[inline]
     fn into_iter_ones(self) -> T::IntoIterOnes {
         self.bits.into_iter_ones()
+    }
+
+    #[inline]
+    fn into_iter_zeros(self) -> T::IntoIterZeros {
+        self.bits.into_iter_zeros()
     }
 }
 
