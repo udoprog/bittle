@@ -3,22 +3,26 @@
 mod join_ones;
 pub use self::join_ones::JoinOnes;
 
-/// Bitset operations.
+/// Bitset immutable operations.
 ///
 /// This is implemented for primitive types such as:
 /// * [`usize`], [`u32`], [`u64`], and other signed numbers.
 /// * Arrays made up of numerical primitives, such as `[u32; 32]`.
 /// * Slices of numerical primitives, such as `&[u32]`.
 ///
-/// This does not include owned operations such as turning the bit set into an
-/// owned iterator using [BitsOwned::into_iter_ones], for more like that see
-/// [BitsOwned].
+/// Also see the associated sibling traits:
+///
+/// * [`BitsMut`] for mutable operations.
+/// * [`BitsOwned`] for owned operations.
+///
+/// [BitsMut]: crate::BitsMut
+/// [BitsOwned]: crate::BitsOwned
 ///
 /// # Examples
 ///
 /// We can use the iterator of each set to compare bit sets of different kinds.
-/// The [Bits::iter_ones] iterator is guaranteed to iterate elements in the same
-/// order:
+/// The [`Bits::iter_ones`] iterator is guaranteed to iterate elements in the
+/// same order:
 ///
 /// ```
 /// use bittle::{Bits, BitsMut};
@@ -33,19 +37,19 @@ pub use self::join_ones::JoinOnes;
 pub trait Bits {
     /// The iterator over ones in this bit pattern.
     ///
-    /// See [Bits::iter_ones].
+    /// See [`Bits::iter_ones`].
     type IterOnes<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
     /// The iterator over zeros in this bit pattern.
     ///
-    /// See [Bits::iter_zeros].
+    /// See [`Bits::iter_zeros`].
     type IterZeros<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
-    /// Get the length of the bit set.
+    /// Get the number of ones in the set.
     ///
     /// # Examples
     ///
@@ -53,9 +57,9 @@ pub trait Bits {
     /// use bittle::{Bits, BitsMut};
     ///
     /// let mut a = 0u128;
-    /// assert_eq!(a.bits_len(), 0);
+    /// assert_eq!(a.count_ones(), 0);
     /// a.bit_set(4);
-    /// assert_eq!(a.bits_len(), 1);
+    /// assert_eq!(a.count_ones(), 1);
     /// ```
     ///
     /// With arrays:
@@ -64,13 +68,13 @@ pub trait Bits {
     /// use bittle::{Bits, BitsMut};
     ///
     /// let mut a = [0u128, 0];
-    /// assert_eq!(a.bits_len(), 0);
+    /// assert_eq!(a.count_ones(), 0);
     /// a.bit_set(240);
-    /// assert_eq!(a.bits_len(), 1);
+    /// assert_eq!(a.count_ones(), 1);
     /// ```
-    fn bits_len(&self) -> u32;
+    fn count_ones(&self) -> u32;
 
-    /// Get the bits_capacity of the set.
+    /// Get the capacity of the underlying set.
     ///
     /// # Examples
     ///
@@ -247,8 +251,8 @@ where
         Self: 'a;
 
     #[inline]
-    fn bits_len(&self) -> u32 {
-        (**self).bits_len()
+    fn count_ones(&self) -> u32 {
+        (**self).count_ones()
     }
 
     #[inline]
@@ -295,8 +299,8 @@ where
         Self: 'a;
 
     #[inline]
-    fn bits_len(&self) -> u32 {
-        (**self).bits_len()
+    fn count_ones(&self) -> u32 {
+        (**self).count_ones()
     }
 
     #[inline]

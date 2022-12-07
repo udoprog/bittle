@@ -13,23 +13,23 @@ where
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
 
     #[inline]
-    fn bits_len(&self) -> u32 {
-        self.iter().map(|b| b.bits_len()).sum()
+    fn count_ones(&self) -> u32 {
+        self.iter().map(Bits::count_ones).sum()
     }
 
     #[inline]
     fn bits_capacity(&self) -> u32 {
-        Bits::bits_len(self).saturating_mul(T::BITS)
+        Bits::count_ones(self).saturating_mul(T::BITS)
     }
 
     #[inline]
     fn is_zeros(&self) -> bool {
-        self.iter().all(|b| b.is_zeros())
+        self.iter().all(Bits::is_zeros)
     }
 
     #[inline]
     fn is_ones(&self) -> bool {
-        self.iter().all(|b| b.is_ones())
+        self.iter().all(Bits::is_ones)
     }
 
     #[inline]

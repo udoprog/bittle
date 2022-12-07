@@ -42,7 +42,7 @@ macro_rules! number {
             type IterZeros<'a> = IterZeros<Self> where Self: 'a;
 
             #[inline]
-            fn bits_len(&self) -> u32 {
+            fn count_ones(&self) -> u32 {
                 <$ty>::count_ones(*self)
             }
 
@@ -188,7 +188,7 @@ number!(u128);
 number!(i128);
 
 /// An iterator over ones in a primitive number.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct IterOnes<T>
 where
@@ -216,7 +216,7 @@ where
 }
 
 /// An iterator over zeros in a primitive number.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 #[repr(transparent)]
 pub struct IterZeros<T>
 where

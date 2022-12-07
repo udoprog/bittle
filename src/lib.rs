@@ -7,7 +7,7 @@
 //!
 //! The name `bittle` comes from `bit` and `little`. Small bitsets!
 //!
-//! This crate defines the [Bits] and [BitsOwned] traits which allows for
+//! This crate defines the [`Bits`] and [`BitsOwned`] traits which allows for
 //! generically interacting with and manipulating bit sets over types such as
 //! `u128`, `[u32; 4]`, or even slices like `&[u8]`.
 //!
@@ -71,7 +71,7 @@
 //! assert!(!a.bit_test(31));
 //! ```
 //!
-//! Some other interesting operations, such as [Bits::join_ones] are available,
+//! Some other interesting operations, such as [`Bits::join_ones`] are available,
 //! allowing bitsets to act like masks over other iterators:
 //!
 //! ```rust
@@ -114,3 +114,8 @@ pub use self::bits_mut::BitsMut;
 
 mod bits_owned;
 pub use self::bits_owned::BitsOwned;
+
+pub mod prelude {
+    //! Prelude use to conveniently import all relevant bits-oriented traits.
+    pub use crate::{Bits, BitsMut, BitsOwned};
+}

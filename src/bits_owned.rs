@@ -1,9 +1,22 @@
 use crate::bits_mut::BitsMut;
 
-/// Trait which abstracts over type capable of representing owned bit sets.
+/// Bitset owned operations.
 ///
-/// This extends [Bits] and adds the necessary capabilities to generically
-/// construct a bit set instead of only operating over it.
+/// This is implemented for primitive types such as:
+/// * [`usize`], [`u32`], [`u64`], and other signed numbers.
+/// * Arrays made up of numerical primitives, such as `[u32; 32]`.
+///
+/// In contrast to [`Bits`] and [`BitsMut`] this is not implemented for slices
+/// such as `&[u32]`. This is since the operations provided here require
+/// ownership of the underlying data.
+///
+/// Also see the associated sibling traits:
+///
+/// * [`Bits`] for immutable operations.
+/// * [`BitsMut`] for mutable operations.
+///
+/// [Bits]: crate::Bits
+/// [BitsMut]: crate::BitsMut
 ///
 /// # Examples
 ///
@@ -43,7 +56,7 @@ pub trait BitsOwned: BitsMut {
 
     /// The bit pattern containing all zeros, or one that is empty.
     ///
-    /// See [BitsOwned::zeros].
+    /// See [`BitsOwned::zeros`].
     ///
     /// # Examples
     ///
@@ -57,7 +70,7 @@ pub trait BitsOwned: BitsMut {
 
     /// The bit pattern containing all ones, or one that is full.
     ///
-    /// See [BitsOwned::ones].
+    /// See [`BitsOwned::ones`].
     ///
     /// # Examples
     ///
@@ -71,7 +84,7 @@ pub trait BitsOwned: BitsMut {
 
     /// Owning iterator over bits.
     ///
-    /// See [BitsOwned::into_iter_ones].
+    /// See [`BitsOwned::into_iter_ones`].
     type IntoIterOnes: Iterator<Item = u32>;
 
     /// Construct a bit set of all zeros, or one that is empty.
@@ -119,6 +132,7 @@ pub trait BitsOwned: BitsMut {
     /// let set = <[u32; 4]>::zeros().with_bit(8).with_bit(12);
     /// assert!(set.iter_ones().eq([8, 12]))
     /// ```
+    #[must_use]
     fn with_bit(self, bit: u32) -> Self;
 
     /// Set the given bit and return the modified set.
@@ -140,6 +154,7 @@ pub trait BitsOwned: BitsMut {
     /// let set = <[u8; 2]>::ones().without_bit(2).without_bit(10);
     /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
     /// ```
+    #[must_use]
     fn without_bit(self, bit: u32) -> Self;
 
     /// Construct the union between this and another set.
@@ -172,6 +187,7 @@ pub trait BitsOwned: BitsMut {
     /// let c = a.union(b);
     /// assert!(c.iter_ones().eq([31, 62, 67]));
     /// ```
+    #[must_use]
     fn union(self, other: Self) -> Self;
 
     /// Construct a conjunction of this and another set.
@@ -204,6 +220,7 @@ pub trait BitsOwned: BitsMut {
     /// let c = a.conjunction(b);
     /// assert!(c.iter_ones().eq([31]));
     /// ```
+    #[must_use]
     fn conjunction(self, other: Self) -> Self;
 
     /// Construct the difference between this and another set.
@@ -234,6 +251,7 @@ pub trait BitsOwned: BitsMut {
     /// let c = a.difference(b);
     /// assert!(c.iter_ones().eq([62]));
     /// ```
+    #[must_use]
     fn difference(self, other: Self) -> Self;
 
     /// Construct the symmetric difference between this and another set.
@@ -266,6 +284,7 @@ pub trait BitsOwned: BitsMut {
     /// let c = a.symmetric_difference(b);
     /// assert!(c.iter_ones().eq([62, 67]));
     /// ```
+    #[must_use]
     fn symmetric_difference(self, other: Self) -> Self;
 
     /// Construct an owning iterator over a bit set.

@@ -1,6 +1,36 @@
 use crate::bits::Bits;
 
-/// Mutable operations over a bitset.
+/// Bitset mutable operations.
+///
+/// This is implemented for primitive types such as:
+/// * [`usize`], [`u32`], [`u64`], and other signed numbers.
+/// * Arrays made up of numerical primitives, such as `[u32; 32]`.
+/// * Slices of numerical primitives, such as `&[u32]`.
+///
+/// Also see the associated sibling traits:
+///
+/// * [`Bits`] for immutable operations.
+/// * [`BitsOwned`] for owned operations.
+///
+/// [Bits]: crate::Bits
+/// [BitsOwned]: crate::BitsOwned
+///
+/// # Examples
+///
+/// We can use the iterator of each set to compare bit sets of different kinds.
+/// The [`Bits::iter_ones`] iterator is guaranteed to iterate elements in the
+/// same order:
+///
+/// ```
+/// use bittle::{Bits, BitsMut};
+///
+/// let a: [u64; 2] = bittle::set![111];
+/// let mut b = 0u128;
+///
+/// assert!(!a.iter_ones().eq(b.iter_ones()));
+/// b.bit_set(111);
+/// assert!(a.iter_ones().eq(b.iter_ones()));
+/// ```
 pub trait BitsMut: Bits {
     /// Set the given bit.
     ///

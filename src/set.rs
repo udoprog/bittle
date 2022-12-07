@@ -24,7 +24,7 @@ use crate::bits_owned::BitsOwned;
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 /// ```
 ///
-/// This also provides unambigious implementations of [IntoIterator], whereas
+/// This also provides unambigious implementations of [`IntoIterator`], whereas
 /// arrays provide one themselves while primitive numbers do not.
 ///
 /// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
@@ -286,8 +286,8 @@ where
         Self: 'a;
 
     #[inline]
-    fn bits_len(&self) -> u32 {
-        self.bits.bits_len()
+    fn count_ones(&self) -> u32 {
+        self.bits.count_ones()
     }
 
     #[inline]

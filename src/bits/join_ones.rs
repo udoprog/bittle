@@ -1,6 +1,6 @@
 /// A joined iterator.
 ///
-/// Created using [Bits::join_ones][crate::Bits::join_ones].
+/// Created using [`Bits::join_ones`][crate::Bits::join_ones].
 pub struct JoinOnes<A, B> {
     mask: A,
     iter: B,

@@ -10,7 +10,10 @@ impl<T, const N: usize> BitsOwned for [T; N]
 where
     T: Eq + BitsOwned + Number,
 {
-    const BITS: u32 = T::BITS * N as u32;
+    const BITS: u32 = match T::BITS.checked_mul(N as u32) {
+        Some(value) => value,
+        None => panic!("32-bit overflow in capacity"),
+    };
     const ZEROS: Self = [T::ZEROS; N];
     const ONES: Self = [T::ONES; N];
 
@@ -28,19 +31,13 @@ where
 
     #[inline]
     fn with_bit(mut self, bit: u32) -> Self {
-        if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
-            bits.bit_set(bit % T::BITS);
-        }
-
+        self[(bit / T::BITS) as usize % N].bit_set(bit % T::BITS);
         self
     }
 
     #[inline]
     fn without_bit(mut self, bit: u32) -> Self {
-        if let Some(bits) = self.get_mut(((bit / T::BITS) % (N as u32)) as usize) {
-            bits.bit_clear(bit % T::BITS);
-        }
-
+        self[(bit / T::BITS) as usize % N].bit_clear(bit % T::BITS);
         self
     }
 
@@ -96,13 +93,13 @@ where
     type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
 
     #[inline]
-    fn bits_len(&self) -> u32 {
-        self.iter().map(Bits::bits_len).sum()
+    fn count_ones(&self) -> u32 {
+        self.iter().map(Bits::count_ones).sum()
     }
 
     #[inline]
     fn bits_capacity(&self) -> u32 {
-        T::BITS.saturating_mul(N as u32)
+        Self::BITS
     }
 
     #[inline]
@@ -137,7 +134,7 @@ where
 {
     #[inline]
     fn bit_set(&mut self, index: u32) {
-        self[(index / T::BITS) as usize % N].bit_set(index % T::BITS)
+        self[(index / T::BITS) as usize % N].bit_set(index % T::BITS);
     }
 
     #[inline]
