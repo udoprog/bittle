@@ -22,7 +22,7 @@ use crate::bits_owned::BitsOwned;
 /// use bittle::{Bits, Set};
 ///
 /// let set: u128 = bittle::set![1, 14];
-/// assert_eq!(format!("{set:?}"), "85080976323951685521100712850600493056");
+/// assert_eq!(format!("{set:?}"), "16386");
 ///
 /// let set: Set<u128> = Set::new(set);
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
@@ -39,8 +39,8 @@ use crate::bits_owned::BitsOwned;
 /// ```
 /// use bittle::Set;
 ///
-/// let array = [0b00010000u8, 0b0u8];
-/// assert!(array.into_iter().eq([16, 0]));
+/// let array = [0b00001000u8, 0b0u8];
+/// assert!(array.into_iter().eq([8, 0]));
 ///
 /// let set = Set::new(array);
 /// assert!(set.into_iter().eq([3]));
@@ -88,14 +88,14 @@ use crate::bits_owned::BitsOwned;
 ///
 /// ```
 /// use bittle::Set;
-/// let a = 0b00001000_10000000_00000000_00000000u32;
-/// let b = 0b00001000_10000000u16;
-/// let c = vec![0b00001000u8, 0b10000000u8];
+/// let a = 0b00000000_00000000_00000001_00010000u32;
+/// let b = 0b00000001_00010000u16;
+/// let c = vec![0b00010000u8, 0b00000001u8];
 ///
 /// assert_eq!(Set::new(a), Set::new(b));
 /// assert_eq!(Set::new(a), Set::from_ref(&c[..]));
 ///
-/// let d = 0b11111111_10000000u16;
+/// let d = 0b00000001_11111111u16;
 /// assert!(Set::new(d) < Set::new(a));
 /// assert!(Set::new(d) < Set::new(b));
 /// assert!(Set::new(d) < Set::from_ref(&c[..]));
@@ -180,7 +180,7 @@ impl<T> Set<T> {
     /// use bittle::{Bits, Set};
     ///
     /// let mut set = Set::new(0b00001001u32);
-    /// assert!(set.iter_ones().eq([28, 31]));
+    /// assert!(set.iter_ones().eq([0, 3]));
     /// ```
     #[inline]
     pub const fn new(bits: T) -> Self {
@@ -199,7 +199,7 @@ where
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::from_ref(&[0b10000000u8, 0b00001000u8]);
+    /// let mut set = Set::from_ref(&[0b00000001u8, 0b00010000u8]);
     /// assert!(set.iter_ones().eq([0, 12]));
     /// ```
     #[inline]
@@ -219,13 +219,13 @@ where
     /// ```
     /// use bittle::{Bits, BitsMut, Set};
     ///
-    /// let mut values = [0b10000000u8, 0b00001000u8];
+    /// let mut values = [0b00000001u8, 0b00010000u8];
     ///
     /// let mut set = Set::from_mut(&mut values);
     /// assert!(set.iter_ones().eq([0, 12]));
-    /// set.set_bit(4);
     ///
-    /// assert_eq!(&values[..], &[0b10001000u8, 0b00001000u8]);
+    /// set.set_bit(4);
+    /// assert_eq!(&values[..], &[0b00010001u8, 0b00010000u8]);
     /// ```
     #[inline]
     pub fn from_mut<U>(bits: &mut U) -> &mut Self
@@ -438,7 +438,13 @@ where
 ///
 /// ```
 /// use bittle::Set;
-/// assert_eq!(Set::new(0b00001000u8), Set::new(0b00001000_00000000u16));
+///
+/// let a = Set::new(0b00001000u8);
+/// let b = Set::new(0b00000000_00001000u16);
+/// let c = Set::new([0b00001000u8, 0]);
+///
+/// assert_eq!(a, b);
+/// assert_eq!(a, c);
 /// ```
 impl<T, U> cmp::PartialEq<U> for Set<T>
 where

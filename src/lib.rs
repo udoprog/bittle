@@ -32,16 +32,16 @@
 //! use bittle::Bits;
 //!
 //! let array: [u32; 4] = [0, 1, 2, 3];
-//! assert!(array.iter_ones().eq([63, 94, 126, 127]));
+//! assert!(array.iter_ones().eq([32, 65, 96, 97]));
 //!
-//! let n = 0b10001000_00000000_00000000_00000000u32;
+//! let n = 0b00000000_00000000_00000000_00010001u32;
 //! assert!(n.iter_ones().eq([0, 4]));
 //!
-//! let array_of_arrays: [[u8; 4]; 2] = [[8, 0, 0, 0], [0, 0, 128, 0]];
+//! let array_of_arrays: [[u8; 4]; 2] = [[16, 0, 0, 0], [0, 0, 1, 0]];
 //! assert!(array_of_arrays.iter_ones().eq([4, 48]));
 //!
 //! let mut vec: Vec<u32> = vec![0, 1, 2, 3];
-//! assert!(vec.iter_ones().eq([63, 94, 126, 127]));
+//! assert!(vec.iter_ones().eq([32, 65, 96, 97]));
 //! ```
 //!
 //! <br>
@@ -52,14 +52,14 @@
 //! ```
 //! use bittle::Bits;
 //!
-//! let array: [u32; 4] = bittle::set![63, 94, 126, 127];
-//! assert!(array.iter_ones().eq([63, 94, 126, 127]));
-//!
-//! let array_of_arrays: [[u8; 4]; 2] = bittle::set![4, 48];
-//! assert!(array_of_arrays.iter_ones().eq([4, 48]));
+//! let array: [u32; 4] = bittle::set![32, 65, 96, 97];
+//! assert!(array.iter_ones().eq([32, 65, 96, 97]));
 //!
 //! let n: u32 = bittle::set![0, 4];
 //! assert!(n.iter_ones().eq([0, 4]));
+//!
+//! let array_of_arrays: [[u8; 4]; 2] = bittle::set![4, 48];
+//! assert!(array_of_arrays.iter_ones().eq([4, 48]));
 //! ```
 //!
 //! <br>
@@ -71,11 +71,12 @@
 //! use bittle::{Bits, BitsMut};
 //!
 //! let mut vec: Vec<u32> = vec![0u32; 4];
-//! vec.set_bit(63);
-//! vec.set_bit(94);
-//! vec.set_bit(126);
-//! vec.set_bit(127);
-//! assert!(vec.iter_ones().eq([63, 94, 126, 127]));
+//! vec.set_bit(32);
+//! vec.set_bit(65);
+//! vec.set_bit(96);
+//! vec.set_bit(97);
+//! assert!(vec.iter_ones().eq([32, 65, 96, 97]));
+//! assert_eq!(vec, [0, 1, 2, 3]);
 //! ```
 //!
 //! <br>
