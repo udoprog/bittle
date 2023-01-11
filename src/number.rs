@@ -212,7 +212,7 @@ macro_rules! number {
 
             #[inline]
             fn difference_assign(&mut self, other: &Self) {
-                *self = other & !*self;
+                *self &= !other;
             }
 
             #[inline]
@@ -266,7 +266,7 @@ macro_rules! number {
 
             #[inline]
             fn difference(self, other: Self) -> Self {
-                !self & other
+                self & !other
             }
 
             #[inline]
