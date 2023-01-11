@@ -229,8 +229,8 @@ pub trait BitsOwned: BitsMut {
 
     /// Construct the difference between this and another set.
     ///
-    /// This returns the elements in the second set which are not part of the
-    /// first.
+    /// This returns the elements in the first set which are not part of the
+    /// second.
     ///
     /// # Examples
     ///
@@ -241,7 +241,7 @@ pub trait BitsOwned: BitsMut {
     /// let b: u128 = bittle::set![31, 62];
     ///
     /// let c = a.difference(b);
-    /// assert!(c.iter_ones().eq([62]));
+    /// assert!(c.iter_ones().eq([67]));
     /// ```
     ///
     /// Using arrays:
@@ -253,7 +253,7 @@ pub trait BitsOwned: BitsMut {
     /// let b: [u32; 4] = bittle::set![31, 62];
     ///
     /// let c = a.difference(b);
-    /// assert!(c.iter_ones().eq([62]));
+    /// assert!(c.iter_ones().eq([67]));
     /// ```
     #[must_use]
     fn difference(self, other: Self) -> Self;

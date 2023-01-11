@@ -211,8 +211,8 @@ pub trait BitsMut: Bits {
     /// Modify the current set in place so that it becomes a difference of this
     /// and another set.
     ///
-    /// This assigns the elements in the second set which are not part of the
-    /// first.
+    /// This keeps the elements in the first set which are not part of the
+    /// second.
     ///
     /// # Examples
     ///
@@ -230,8 +230,8 @@ pub trait BitsMut: Bits {
     ///
     /// assert_ne!(c, d);
     ///
-    /// assert!(c.iter_ones().eq([62]));
-    /// assert!(d.iter_ones().eq([67]));
+    /// assert!(c.iter_ones().eq([67]));
+    /// assert!(d.iter_ones().eq([62]));
     /// ```
     ///
     /// Using arrays:
@@ -250,8 +250,8 @@ pub trait BitsMut: Bits {
     ///
     /// assert_ne!(c, d);
     ///
-    /// assert!(c.iter_ones().eq([62]));
-    /// assert!(d.iter_ones().eq([67]));
+    /// assert!(c.iter_ones().eq([67]));
+    /// assert!(d.iter_ones().eq([62]));
     /// ```
     fn difference_assign(&mut self, other: &Self);
 
