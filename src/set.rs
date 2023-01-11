@@ -1,7 +1,7 @@
 use core::cmp;
 use core::fmt;
 use core::hash::{Hash, Hasher};
-use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign};
+use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Sub, SubAssign};
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
@@ -51,9 +51,10 @@ use crate::bits_owned::BitsOwned;
 /// ## Standard operators
 ///
 /// Wrapping into a [Set] also provides us with [`BitOr`], [`BitAnd`],
-/// [`BitXor`], and [`BitOrAssign`], [`BitAndAssign`], [`BitXorAssign`]
-/// implementations to work with. They each refer to [`BitsOwned::union`],
-/// [`BitsOwned::conjunction`], and [`BitsOwned::symmetric_difference`]
+/// [`BitXor`], [`Sub`], and [`BitOrAssign`], [`BitAndAssign`],
+/// [`BitXorAssign`], [`SubAssign`] implementations to work with. They each
+/// refer to [`BitsOwned::union`], [`BitsOwned::conjunction`],
+/// [`BitsOwned::symmetric_difference`], and [`BitsOwned::difference`]
 /// respectively.
 ///
 /// ```
@@ -65,6 +66,7 @@ use crate::bits_owned::BitsOwned;
 /// assert!((set1 | set2).iter_ones().eq([1, 65, 110]));
 /// assert!((set1 & set2).iter_ones().eq([65]));
 /// assert!((set1 ^ set2).iter_ones().eq([1, 110]));
+/// assert!((set1 - set2).iter_ones().eq([1]));
 ///
 /// let mut set3 = set1.clone();
 /// set3 |= &set2;
@@ -77,6 +79,10 @@ use crate::bits_owned::BitsOwned;
 /// let mut set3 = set1.clone();
 /// set3 ^= &set2;
 /// assert!(set3.iter_ones().eq([1, 110]));
+///
+/// let mut set3 = set1.clone();
+/// set3 -= &set2;
+/// assert!(set3.iter_ones().eq([1]));
 /// ```
 ///
 /// <br>
@@ -635,3 +641,5 @@ assign_ops!(
     Set<T>,
     symmetric_difference_assign
 );
+owned_ops!(Sub::sub, Set<T>, difference);
+assign_ops!(SubAssign::sub_assign, Set<T>, difference_assign);
