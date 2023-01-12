@@ -22,6 +22,7 @@ use crate::bits_owned::BitsOwned;
 /// use bittle::{Bits, Set};
 ///
 /// let set: u128 = bittle::set![1, 14];
+/// # #[cfg(not(bittle_shr))]
 /// assert_eq!(format!("{set:?}"), "16386");
 ///
 /// let set: Set<u128> = Set::new(set);
@@ -43,6 +44,7 @@ use crate::bits_owned::BitsOwned;
 /// assert!(array.into_iter().eq([8, 0]));
 ///
 /// let set = Set::new(array);
+/// # #[cfg(not(bittle_shr))]
 /// assert!(set.into_iter().eq([3]));
 /// ```
 ///
@@ -98,12 +100,17 @@ use crate::bits_owned::BitsOwned;
 /// let b = 0b00000001_00010000u16;
 /// let c = vec![0b00010000u8, 0b00000001u8];
 ///
+/// # #[cfg(not(bittle_shr))]
 /// assert_eq!(Set::new(a), Set::new(b));
+/// # #[cfg(not(bittle_shr))]
 /// assert_eq!(Set::new(a), Set::from_ref(&c[..]));
 ///
 /// let d = 0b00000001_11111111u16;
+/// # #[cfg(not(bittle_shr))]
 /// assert!(Set::new(d) < Set::new(a));
+/// # #[cfg(not(bittle_shr))]
 /// assert!(Set::new(d) < Set::new(b));
+/// # #[cfg(not(bittle_shr))]
 /// assert!(Set::new(d) < Set::from_ref(&c[..]));
 /// ```
 ///
@@ -186,6 +193,7 @@ impl<T> Set<T> {
     /// use bittle::{Bits, Set};
     ///
     /// let mut set = Set::new(0b00001001u32);
+    /// # #[cfg(not(bittle_shr))]
     /// assert!(set.iter_ones().eq([0, 3]));
     /// ```
     #[inline]
@@ -206,6 +214,7 @@ where
     /// use bittle::{Bits, Set};
     ///
     /// let mut set = Set::from_ref(&[0b00000001u8, 0b00010000u8]);
+    /// # #[cfg(not(bittle_shr))]
     /// assert!(set.iter_ones().eq([0, 12]));
     /// ```
     #[inline]
@@ -228,9 +237,11 @@ where
     /// let mut values = [0b00000001u8, 0b00010000u8];
     ///
     /// let mut set = Set::from_mut(&mut values);
+    /// # #[cfg(not(bittle_shr))]
     /// assert!(set.iter_ones().eq([0, 12]));
     ///
     /// set.set_bit(4);
+    /// # #[cfg(not(bittle_shr))]
     /// assert_eq!(&values[..], &[0b00010001u8, 0b00010000u8]);
     /// ```
     #[inline]
@@ -451,6 +462,9 @@ where
 /// use bittle::Set;
 ///
 /// let a = Set::new(0b00001000u8);
+/// # #[cfg(bittle_shr)]
+/// # let b = Set::new(0b00001000_00000000u16);
+/// # #[cfg(not(bittle_shr))]
 /// let b = Set::new(0b00000000_00001000u16);
 /// let c = Set::new([0b00001000u8, 0]);
 ///

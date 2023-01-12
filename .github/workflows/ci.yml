@@ -23,6 +23,7 @@ jobs:
         toolchain: stable
         override: true
         profile: minimal
-    - run: cargo build
+    - run: cargo test
       env:
         RUSTFLAGS: --cfg bittle_shr
+        RUSTDOCFLAGS: --cfg bittle_shr
