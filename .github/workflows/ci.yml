@@ -13,17 +13,3 @@ jobs:
         override: true
         profile: minimal
     - run: cargo test
-
-  build_shr:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-        profile: minimal
-    - run: cargo test
-      env:
-        RUSTFLAGS: --cfg bittle_shr
-        RUSTDOCFLAGS: --cfg bittle_shr

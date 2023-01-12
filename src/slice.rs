@@ -2,14 +2,17 @@
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
+use crate::shift::{DefaultShift, Shift};
 use crate::BitsOwned;
 
 impl<T> Bits for [T]
 where
     T: Copy + BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
-    type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
+    type IterOnes<'a> = IterOnes<'a, T, DefaultShift> where Self: 'a;
+    type IterOnesWith<'a, S> = IterOnes<'a, T, S> where Self: 'a, S: Shift;
+    type IterZeros<'a> = IterZeros<'a, T, DefaultShift> where Self: 'a;
+    type IterZerosWith<'a, S> = IterZeros<'a, T, S> where Self: 'a, S: Shift;
 
     /// Count the number of ones in the slice.
     ///
@@ -114,11 +117,14 @@ where
     /// assert!(a.test_bit(4));
     /// ```
     #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        self[((index / T::BITS) as usize % self.len())].test_bit(index % T::BITS)
+    fn test_bit_with<S>(&self, index: u32) -> bool
+    where
+        S: Shift,
+    {
+        self[((index / T::BITS) as usize % self.len())].test_bit_with::<S>(index % T::BITS)
     }
 
-    /// Iterates over all ones in the slice.
+    /// Iterates over all ones in the slice using the default shift ordering.
     ///
     /// # Examples
     ///
@@ -134,7 +140,26 @@ where
         IterOnes::new(IntoIterator::into_iter(self))
     }
 
-    /// Iterates over all zeros in the slice.
+    /// Iterates over all ones in the slice using a custom shift ordering.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
+    /// let a: &[u8] = a.as_slice();
+    /// assert!(a.iter_ones().eq([4, 11, 14]));
+    /// ```
+    #[inline]
+    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    where
+        S: Shift,
+    {
+        IterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    /// Iterates over all zeros in the slice using the default shift ordering.
     ///
     /// # Examples
     ///
@@ -147,6 +172,25 @@ where
     /// ```
     #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
+    }
+
+    /// Iterates over all zeros in the slice using a custom shift ordering.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
+    /// let a: &[u8] = a.as_slice();
+    /// assert!(a.iter_zeros().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
+    /// ```
+    #[inline]
+    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    where
+        S: Shift,
+    {
         IterZeros::new(IntoIterator::into_iter(self))
     }
 }
@@ -168,8 +212,11 @@ where
     /// assert!(a.iter_ones().eq([7, 13]));
     /// ```
     #[inline]
-    fn set_bit(&mut self, index: u32) {
-        self[((index / T::BITS) as usize % self.len())].set_bit(index % T::BITS);
+    fn set_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        self[((index / T::BITS) as usize % self.len())].set_bit_with::<S>(index % T::BITS);
     }
 
     /// Set the given bit is set in the slice.
@@ -185,10 +232,11 @@ where
     /// assert!(a.iter_ones().eq([7]));
     /// ```
     #[inline]
-    fn clear_bit(&mut self, index: u32) {
-        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.clear_bit(index % T::BITS);
-        }
+    fn clear_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        self[((index / T::BITS) as usize % self.len())].clear_bit_with::<S>(index % T::BITS);
     }
 
     /// Clear the entire slice, or set all bits to zeros.
@@ -241,28 +289,31 @@ where
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterOnes<'a, T>
+pub struct IterOnes<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterOnes, u32)>,
+    current: Option<(T::IntoIterOnesWith<S>, u32)>,
 }
 
-impl<'a, T> IterOnes<'a, T>
+impl<'a, T, S> IterOnes<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     #[inline]
     pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
-        let current = iter.next().map(|v| (v.into_iter_ones(), 0));
+        let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
         Self { iter, current }
     }
 }
 
-impl<'a, T> Iterator for IterOnes<'a, T>
+impl<'a, T, S> Iterator for IterOnes<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     type Item = u32;
 
@@ -278,7 +329,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_ones(),
+                self.iter.next()?.into_iter_ones_with(),
                 offset.checked_add(T::BITS)?,
             ));
         }
@@ -287,28 +338,31 @@ where
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterZeros<'a, T>
+pub struct IterZeros<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterZeros, u32)>,
+    current: Option<(T::IntoIterZerosWith<S>, u32)>,
 }
 
-impl<'a, T> IterZeros<'a, T>
+impl<'a, T, S> IterZeros<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     #[inline]
     pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
-        let current = iter.next().map(|v| (v.into_iter_zeros(), 0));
+        let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
         Self { iter, current }
     }
 }
 
-impl<'a, T> Iterator for IterZeros<'a, T>
+impl<'a, T, S> Iterator for IterZeros<'a, T, S>
 where
     T: Copy + BitsOwned,
+    S: Shift,
 {
     type Item = u32;
 
@@ -324,7 +378,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_zeros(),
+                self.iter.next()?.into_iter_zeros_with(),
                 offset.checked_add(T::BITS)?,
             ));
         }

@@ -27,30 +27,17 @@ bittle = "0.5.0"
 ## Guide
 
 A bit is always identified by a [`u32`] by its index, and the exact location
-for primitive numbers is that the least significant bit corresponds to the
-lowest index, and the most significant bit is the highest ([see issue #2]).
-This is called "shift left indexing" and doesn't correspond with what
-literals look like when reading them left-to-right:
+for primitive numbers is defined by its shift indexing mode, which is
+shift-left indexing ([`Shl`]) by default.
+
+Shift-left indexing is constructed increasingly from right to left for
+individual primitives, such as the following [`u8`] literal:
 
 ```text
 0b0010_0010u8
     ^    ^- index 1
     '------ index 5
 ```
-
-It gets a bit more confusing when considering arrays, since each element in
-the array defines a span of bits which does increase left-to-right:
-
-```text
- 0 --------- 8  8 -------- 15
-[0b0010_0010u8, 0b1000_0000u8]
-     ^    ^       ^- index 15
-     |    '--------- index 1
-     '-------------- index 5
-```
-
-> **Note**: shift right indexing is available experimentally under the
-> `--cfg bittle_shr` flag for benchmarking.
 
 <br>
 
@@ -160,10 +147,13 @@ assert!(m.join_ones(&elements).eq([&10, &101]));
 <br>
 
 [`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
+[`Bits::test_bit_shr`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_shr
+[`Bits::test_bit_with`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_with
 [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
 [`BitsMut`]: https://docs.rs/bittle/latest/bittle/trait.BitsMut.html
 [`BitsOwned`]: https://docs.rs/bittle/latest/bittle/trait.BitsOwned.html
 [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
+[`Shl`]: https://docs.rs/bittle/latest/bittle/struct.shl.html
 [`u32`]: https://doc.rust-lang.org/std/primitive.u32.html
 [see issue #2]: https://github.com/udoprog/bittle/pull/2

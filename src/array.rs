@@ -3,6 +3,7 @@
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
+use crate::shift::{DefaultShift, Shift};
 use crate::slice::{IterOnes, IterZeros};
 
 impl<T, const N: usize> BitsOwned for [T; N]
@@ -17,8 +18,10 @@ where
     const ZEROS: Self = [T::ZEROS; N];
     const ONES: Self = [T::ONES; N];
 
-    type IntoIterOnes = IntoIterOnes<T, N>;
-    type IntoIterZeros = IntoIterZeros<T, N>;
+    type IntoIterOnes = IntoIterOnes<T, N, DefaultShift>;
+    type IntoIterOnesWith<S> = IntoIterOnes<T, N, S> where S: Shift;
+    type IntoIterZeros = IntoIterZeros<T, N, DefaultShift>;
+    type IntoIterZerosWith<S> = IntoIterZeros<T, N, S> where S: Shift;
 
     #[inline]
     fn zeros() -> Self {
@@ -31,14 +34,20 @@ where
     }
 
     #[inline]
-    fn with_bit(mut self, bit: u32) -> Self {
-        self[(bit / T::BITS) as usize % N].set_bit(bit % T::BITS);
+    fn with_bit_with<S>(mut self, bit: u32) -> Self
+    where
+        S: Shift,
+    {
+        self[(bit / T::BITS) as usize % N].set_bit_with::<S>(bit % T::BITS);
         self
     }
 
     #[inline]
-    fn without_bit(mut self, bit: u32) -> Self {
-        self[(bit / T::BITS) as usize % N].clear_bit(bit % T::BITS);
+    fn without_bit_with<S>(mut self, bit: u32) -> Self
+    where
+        S: Shift,
+    {
+        self[(bit / T::BITS) as usize % N].clear_bit_with::<S>(bit % T::BITS);
         self
     }
 
@@ -80,14 +89,28 @@ where
 
     #[inline]
     fn into_iter_ones(self) -> Self::IntoIterOnes {
-        let iter = IntoIterator::into_iter(self);
-        IntoIterOnes::new(iter)
+        IntoIterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn into_iter_ones_with<S>(self) -> Self::IntoIterOnesWith<S>
+    where
+        S: Shift,
+    {
+        IntoIterOnes::new(IntoIterator::into_iter(self))
     }
 
     #[inline]
     fn into_iter_zeros(self) -> Self::IntoIterZeros {
-        let iter = IntoIterator::into_iter(self);
-        IntoIterZeros::new(iter)
+        IntoIterZeros::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn into_iter_zeros_with<S>(self) -> Self::IntoIterZerosWith<S>
+    where
+        S: Shift,
+    {
+        IntoIterZeros::new(IntoIterator::into_iter(self))
     }
 }
 
@@ -95,8 +118,10 @@ impl<T, const N: usize> Bits for [T; N]
 where
     T: Copy + Eq + BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T> where Self: 'a;
-    type IterZeros<'a> = IterZeros<'a, T> where Self: 'a;
+    type IterOnes<'a> = IterOnes<'a, T, DefaultShift> where Self: 'a;
+    type IterOnesWith<'a, S> = IterOnes<'a, T, S> where Self: 'a, S: Shift;
+    type IterZeros<'a> = IterZeros<'a, T, DefaultShift> where Self: 'a;
+    type IterZerosWith<'a, S> = IterZeros<'a, T, S> where Self: 'a, S: Shift;
 
     #[inline]
     fn count_ones(&self) -> u32 {
@@ -124,8 +149,11 @@ where
     }
 
     #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        self[(index / T::BITS) as usize % N].test_bit(index % T::BITS)
+    fn test_bit_with<S>(&self, index: u32) -> bool
+    where
+        S: Shift,
+    {
+        self[(index / T::BITS) as usize % N].test_bit_with::<S>(index % T::BITS)
     }
 
     #[inline]
@@ -134,7 +162,23 @@ where
     }
 
     #[inline]
+    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    where
+        S: Shift,
+    {
+        IterOnes::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        IterZeros::new(IntoIterator::into_iter(self))
+    }
+
+    #[inline]
+    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    where
+        S: Shift,
+    {
         IterZeros::new(IntoIterator::into_iter(self))
     }
 }
@@ -144,8 +188,26 @@ where
     T: Copy + Eq + BitsOwned,
 {
     #[inline]
-    fn set_bit(&mut self, index: u32) {
-        self[(index / T::BITS) as usize % N].set_bit(index % T::BITS);
+    fn set_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        self[(index / T::BITS) as usize % N].set_bit_with::<S>(index % T::BITS);
+    }
+
+    #[inline]
+    fn clear_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        self[(index / T::BITS) as usize % N].clear_bit_with::<S>(index % T::BITS);
+    }
+
+    #[inline]
+    fn clear_bits(&mut self) {
+        for b in self {
+            b.clear_bits();
+        }
     }
 
     #[inline]
@@ -175,46 +237,35 @@ where
             o.symmetric_difference_assign(i);
         }
     }
-
-    #[inline]
-    fn clear_bit(&mut self, index: u32) {
-        if let Some(bits) = self.get_mut((index / T::BITS) as usize) {
-            bits.clear_bit(index % T::BITS);
-        }
-    }
-
-    #[inline]
-    fn clear_bits(&mut self) {
-        for b in self {
-            b.clear_bits();
-        }
-    }
 }
 
 /// An owned iterator over the bits set to one in an array.
 #[derive(Clone)]
-pub struct IntoIterOnes<T, const N: usize>
+pub struct IntoIterOnes<T, const N: usize, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterOnes, u32)>,
+    current: Option<(T::IntoIterOnesWith<S>, u32)>,
 }
 
-impl<T, const N: usize> IntoIterOnes<T, N>
+impl<T, const N: usize, S> IntoIterOnes<T, N, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     #[inline]
     fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
-        let current = iter.next().map(|v| (v.into_iter_ones(), 0));
+        let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
         Self { iter, current }
     }
 }
 
-impl<T, const N: usize> Iterator for IntoIterOnes<T, N>
+impl<T, const N: usize, S> Iterator for IntoIterOnes<T, N, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     type Item = u32;
 
@@ -229,7 +280,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_ones(),
+                self.iter.next()?.into_iter_ones_with(),
                 offset.checked_add(T::BITS)?,
             ));
         }
@@ -238,28 +289,31 @@ where
 
 /// An owned iterator over the bits set to zero in an array.
 #[derive(Clone)]
-pub struct IntoIterZeros<T, const N: usize>
+pub struct IntoIterZeros<T, const N: usize, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterZeros, u32)>,
+    current: Option<(T::IntoIterZerosWith<S>, u32)>,
 }
 
-impl<T, const N: usize> IntoIterZeros<T, N>
+impl<T, const N: usize, S> IntoIterZeros<T, N, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     #[inline]
     fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
-        let current = iter.next().map(|v| (v.into_iter_zeros(), 0));
+        let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
         Self { iter, current }
     }
 }
 
-impl<T, const N: usize> Iterator for IntoIterZeros<T, N>
+impl<T, const N: usize, S> Iterator for IntoIterZeros<T, N, S>
 where
     T: BitsOwned,
+    S: Shift,
 {
     type Item = u32;
 
@@ -274,7 +328,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_zeros(),
+                self.iter.next()?.into_iter_zeros_with(),
                 offset.checked_add(T::BITS)?,
             ));
         }

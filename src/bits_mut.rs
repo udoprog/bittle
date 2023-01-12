@@ -1,4 +1,5 @@
 use crate::bits::Bits;
+use crate::shift::{Shift, Shl, Shr};
 
 /// Bitset mutable operations.
 ///
@@ -34,47 +35,18 @@ pub trait BitsMut: Bits {
     /// Set the given bit.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
-    ///
-    /// ```
-    /// use bittle::{Bits, BitsMut, BitsOwned};
-    ///
-    /// let mut a = 0u32;
-    /// assert!(!a.test_bit(32));
-    /// a.set_bit(0);
-    /// assert!(a.test_bit(32));
-    /// a.clear_bit(32);
-    /// assert!(!a.test_bit(0));
-    /// ```
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, BitsMut, BitsOwned};
-    ///
-    /// let mut a = u128::ones();
-    ///
-    /// assert!(a.test_bit(0));
-    /// assert!(a.test_bit(1));
-    /// assert!(a.test_bit(127));
-    ///
-    /// a.clear_bit(1);
-    ///
-    /// assert!(a.test_bit(0));
-    /// assert!(!a.test_bit(1));
-    /// assert!(a.test_bit(127));
-    ///
-    /// a.set_bit(1);
-    ///
-    /// assert!(a.test_bit(0));
-    /// assert!(a.test_bit(1));
-    /// assert!(a.test_bit(127));
-    /// ```
-    fn set_bit(&mut self, index: u32);
+    fn set_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift;
 
-    /// Unset the given bit.
+    /// Set the given bit using [`DefaultShift`].
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
+    /// [`DefaultShift`]: crate::DefaultShift
+    ///
+    /// # Examples
+    ///
     /// ```
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
@@ -86,7 +58,7 @@ pub trait BitsMut: Bits {
     /// assert!(!a.test_bit(0));
     /// ```
     ///
-    /// # Examples
+    /// Using a bigger set:
     ///
     /// ```
     /// use bittle::{Bits, BitsMut, BitsOwned};
@@ -109,7 +81,154 @@ pub trait BitsMut: Bits {
     /// assert!(a.test_bit(1));
     /// assert!(a.test_bit(127));
     /// ```
-    fn clear_bit(&mut self, index: u32);
+    #[inline]
+    fn set_bit(&mut self, index: u32) {
+        self.set_bit_with::<Shl>(index);
+    }
+
+    /// Set the given bit with [`Shr`].
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = 0u32;
+    /// assert!(!a.test_bit_shr(32));
+    /// a.set_bit_shr(0);
+    /// assert!(a.test_bit_shr(32));
+    /// a.clear_bit_shr(32);
+    /// assert!(!a.test_bit_shr(0));
+    /// ```
+    ///
+    /// Using a bigger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = u128::ones();
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    ///
+    /// a.clear_bit_shr(1);
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(!a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    ///
+    /// a.set_bit_shr(1);
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    /// ```
+    #[inline]
+    fn set_bit_shr(&mut self, index: u32) {
+        self.set_bit_with::<Shr>(index);
+    }
+
+    /// Clear the given bit with a custom shift ordering.
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    fn clear_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift;
+
+    /// Clear the given bit using [`DefaultShift`].
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// [`DefaultShift`]: crate::DefaultShift
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = 0u32;
+    /// assert!(!a.test_bit(32));
+    /// a.set_bit(0);
+    /// assert!(a.test_bit(32));
+    /// a.clear_bit(32);
+    /// assert!(!a.test_bit(0));
+    /// ```
+    ///
+    /// Example using array:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = u128::ones();
+    ///
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
+    ///
+    /// a.clear_bit(1);
+    ///
+    /// assert!(a.test_bit(0));
+    /// assert!(!a.test_bit(1));
+    /// assert!(a.test_bit(127));
+    ///
+    /// a.set_bit(1);
+    ///
+    /// assert!(a.test_bit(0));
+    /// assert!(a.test_bit(1));
+    /// assert!(a.test_bit(127));
+    /// ```
+    #[inline]
+    fn clear_bit(&mut self, index: u32) {
+        self.clear_bit_with::<Shl>(index);
+    }
+
+    /// Clear the given bit with [`Shr`].
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = 0u32;
+    /// assert!(!a.test_bit_shr(32));
+    /// a.set_bit_shr(0);
+    /// assert!(a.test_bit_shr(32));
+    /// a.clear_bit_shr(32);
+    /// assert!(!a.test_bit_shr(0));
+    /// ```
+    ///
+    /// Example using array:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = u128::ones();
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    ///
+    /// a.clear_bit_shr(1);
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(!a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    ///
+    /// a.set_bit_shr(1);
+    ///
+    /// assert!(a.test_bit_shr(0));
+    /// assert!(a.test_bit_shr(1));
+    /// assert!(a.test_bit_shr(127));
+    /// ```
+    #[inline]
+    fn clear_bit_shr(&mut self, index: u32) {
+        self.clear_bit_with::<Shr>(index);
+    }
 
     /// Clear the entire bit pattern.
     ///
@@ -296,8 +415,24 @@ where
     T: ?Sized + BitsMut,
 {
     #[inline]
+    fn set_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        (**self).set_bit_with::<S>(index);
+    }
+
+    #[inline]
     fn set_bit(&mut self, index: u32) {
         (**self).set_bit(index);
+    }
+
+    #[inline]
+    fn clear_bit_with<S>(&mut self, index: u32)
+    where
+        S: Shift,
+    {
+        (**self).clear_bit_with::<S>(index);
     }
 
     #[inline]
