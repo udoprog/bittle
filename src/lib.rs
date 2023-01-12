@@ -60,15 +60,19 @@
 //! use bittle::Bits;
 //!
 //! let array: [u32; 4] = [0, 1, 2, 3];
+//! # #[cfg(not(bittle_shr))]
 //! assert!(array.iter_ones().eq([32, 65, 96, 97]));
 //!
 //! let n = 0b00000000_00000000_00000000_00010001u32;
+//! # #[cfg(not(bittle_shr))]
 //! assert!(n.iter_ones().eq([0, 4]));
 //!
 //! let array_of_arrays: [[u8; 4]; 2] = [[16, 0, 0, 0], [0, 0, 1, 0]];
+//! # #[cfg(not(bittle_shr))]
 //! assert!(array_of_arrays.iter_ones().eq([4, 48]));
 //!
 //! let mut vec: Vec<u32> = vec![0, 1, 2, 3];
+//! # #[cfg(not(bittle_shr))]
 //! assert!(vec.iter_ones().eq([32, 65, 96, 97]));
 //! ```
 //!
@@ -104,6 +108,7 @@
 //! vec.set_bit(96);
 //! vec.set_bit(97);
 //! assert!(vec.iter_ones().eq([32, 65, 96, 97]));
+//! # #[cfg(not(bittle_shr))]
 //! assert_eq!(vec, [0, 1, 2, 3]);
 //! ```
 //!
@@ -157,13 +162,14 @@
 //!
 //! <br>
 //!
-//! [see issue #2]: https://github.com/udoprog/bittle/pull/2
-//! [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
-//! [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
+//! [`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
 //! [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
 //! [`BitsMut`]: https://docs.rs/bittle/latest/bittle/trait.BitsMut.html
 //! [`BitsOwned`]: https://docs.rs/bittle/latest/bittle/trait.BitsOwned.html
-//! [`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
+//! [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
+//! [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
+//! [`u32`]: https://doc.rust-lang.org/std/primitive.u32.html
+//! [see issue #2]: https://github.com/udoprog/bittle/pull/2
 
 #![deny(missing_docs)]
 #![deny(rustdoc::broken_intra_doc_links)]

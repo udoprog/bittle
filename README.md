@@ -159,10 +159,11 @@ assert!(m.join_ones(&elements).eq([&10, &101]));
 
 <br>
 
-[see issue #2]: https://github.com/udoprog/bittle/pull/2
-[`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
-[`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
+[`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
 [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
 [`BitsMut`]: https://docs.rs/bittle/latest/bittle/trait.BitsMut.html
 [`BitsOwned`]: https://docs.rs/bittle/latest/bittle/trait.BitsOwned.html
-[`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
+[`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
+[`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
+[`u32`]: https://doc.rust-lang.org/std/primitive.u32.html
+[see issue #2]: https://github.com/udoprog/bittle/pull/2
