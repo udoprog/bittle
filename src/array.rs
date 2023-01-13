@@ -8,7 +8,7 @@ use crate::slice::{IterOnes, IterZeros};
 
 impl<T, const N: usize> BitsOwned for [T; N]
 where
-    T: Copy + Eq + BitsOwned,
+    T: Eq + BitsOwned,
 {
     #[allow(clippy::cast_possible_truncation)]
     const BITS: u32 = match T::BITS.checked_mul(N as u32) {
@@ -126,7 +126,7 @@ where
 
 impl<T, const N: usize> Bits for [T; N]
 where
-    T: Copy + Eq + BitsOwned,
+    T: Eq + BitsOwned,
 {
     type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
     type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
@@ -200,7 +200,7 @@ where
 
 impl<T, const N: usize> BitsMut for [T; N]
 where
-    T: Copy + Eq + BitsOwned,
+    T: Eq + BitsOwned,
 {
     #[inline]
     fn set_bit_in<E>(&mut self, index: u32)
@@ -265,7 +265,6 @@ where
 }
 
 /// An owned iterator over the bits set to one in an array.
-#[derive(Clone)]
 pub struct IntoIterOnes<T, const N: usize, E>
 where
     T: BitsOwned,
@@ -273,6 +272,21 @@ where
 {
     iter: core::array::IntoIter<T, N>,
     current: Option<(T::IntoIterOnesIn<E>, u32)>,
+}
+
+impl<T, const N: usize, E> Clone for IntoIterOnes<T, N, E>
+where
+    T: Clone + BitsOwned,
+    E: Endian,
+    T::IntoIterOnesIn<E>: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            current: self.current.clone(),
+        }
+    }
 }
 
 impl<T, const N: usize, E> IntoIterOnes<T, N, E>
@@ -312,7 +326,6 @@ where
 }
 
 /// An owned iterator over the bits set to zero in an array.
-#[derive(Clone)]
 pub struct IntoIterZeros<T, const N: usize, E>
 where
     T: BitsOwned,
@@ -320,6 +333,21 @@ where
 {
     iter: core::array::IntoIter<T, N>,
     current: Option<(T::IntoIterZerosIn<E>, u32)>,
+}
+
+impl<T, const N: usize, E> Clone for IntoIterZeros<T, N, E>
+where
+    T: Clone + BitsOwned,
+    E: Endian,
+    T::IntoIterZerosIn<E>: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            current: self.current.clone(),
+        }
+    }
 }
 
 impl<T, const N: usize, E> IntoIterZeros<T, N, E>

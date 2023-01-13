@@ -8,46 +8,30 @@ use crate::bits_owned::BitsOwned;
 use crate::endian::{DefaultEndian, Endian};
 
 mod sealed {
-    use crate::endian::Endian;
+    use core::ops::Not;
 
     /// Basic numerical trait for the plumbing of a bit set. This ensures that only
     /// primitive types can be used as the basis of a bit set backed by an array,
     /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
-    pub trait Number: Copy {
-        /// Count number of ones.
-        fn count_ones(self) -> u32;
+    pub trait Number: Copy + Not<Output = Self> {
+        const BITS: u32;
 
-        /// Count number of zeros.
+        fn all_ones(&self) -> bool;
+        fn all_zeros(&self) -> bool;
+        fn count_ones(self) -> u32;
         fn count_zeros(self) -> u32;
 
-        /// Set reverse bit.
-        fn set_bit_rev<E>(&mut self, index: u32)
-        where
-            E: Endian;
+        fn or_assign(&mut self, other: Self);
+        fn and_assign(&mut self, other: Self);
 
-        /// Clear reverse bit.
-        fn clear_bit_rev<E>(&mut self, index: u32)
-        where
-            E: Endian;
-
-        /// Generate an overflowing mask for the given index.
         fn mask(index: u32) -> Self;
-
-        /// Generate a reverse overflowing mask at the given index, that is at
-        /// the `BITS - index - 1` bit location.
         fn mask_rev(index: u32) -> Self;
 
-        /// Count the number of "leading" ones.
-        fn ones(self) -> u32;
+        fn trailing_ones(self) -> u32;
+        fn leading_ones(self) -> u32;
 
-        /// Count the number of "trailing" ones.
-        fn ones_rev(self) -> u32;
-
-        /// Count the number of "leading" zeros.
-        fn zeros(self) -> u32;
-
-        /// Count the number of "trailing" zeros.
-        fn zeros_rev(self) -> u32;
+        fn trailing_zeros(self) -> u32;
+        fn leading_zeros(self) -> u32;
     }
 }
 
@@ -56,30 +40,36 @@ pub(crate) use self::sealed::Number;
 macro_rules! number {
     ($ty:ty) => {
         impl Number for $ty {
+            const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
+
+            #[inline]
+            fn all_ones(&self) -> bool {
+                *self == !0
+            }
+
+            #[inline]
+            fn all_zeros(&self) -> bool {
+                *self == 0
+            }
+
             #[inline]
             fn count_ones(self) -> u32 {
-                <Self>::count_ones(self)
+                <$ty>::count_ones(self)
             }
 
             #[inline]
             fn count_zeros(self) -> u32 {
-                <Self>::count_zeros(self)
+                <$ty>::count_zeros(self)
             }
 
             #[inline]
-            fn set_bit_rev<E>(&mut self, index: u32)
-            where
-                E: Endian,
-            {
-                *self |= E::mask_rev::<Self>(index);
+            fn or_assign(&mut self, other: Self) {
+                *self |= other;
             }
 
             #[inline]
-            fn clear_bit_rev<E>(&mut self, index: u32)
-            where
-                E: Endian,
-            {
-                *self &= !E::mask_rev::<Self>(index);
+            fn and_assign(&mut self, other: Self) {
+                *self &= other;
             }
 
             #[inline]
@@ -95,22 +85,22 @@ macro_rules! number {
             }
 
             #[inline]
-            fn ones(self) -> u32 {
+            fn trailing_ones(self) -> u32 {
                 <$ty>::trailing_ones(self)
             }
 
             #[inline]
-            fn ones_rev(self) -> u32 {
+            fn leading_ones(self) -> u32 {
                 <$ty>::leading_ones(self)
             }
 
             #[inline]
-            fn zeros(self) -> u32 {
+            fn trailing_zeros(self) -> u32 {
                 <$ty>::trailing_zeros(self)
             }
 
             #[inline]
-            fn zeros_rev(self) -> u32 {
+            fn leading_zeros(self) -> u32 {
                 <$ty>::leading_zeros(self)
             }
         }
@@ -135,17 +125,17 @@ macro_rules! number {
 
             #[inline]
             fn bits_capacity(&self) -> u32 {
-                Self::BITS
+                <Self as Number>::BITS
             }
 
             #[inline]
             fn all_zeros(&self) -> bool {
-                *self == Self::ZEROS
+                Number::all_zeros(self)
             }
 
             #[inline]
             fn all_ones(&self) -> bool {
-                *self == Self::ONES
+                Number::all_ones(self)
             }
 
             #[inline]
@@ -242,7 +232,7 @@ macro_rules! number {
         }
 
         impl BitsOwned for $ty {
-            const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
+            const BITS: u32 = <$ty as Number>::BITS;
             const ZEROS: Self = 0;
             const ONES: Self = !0;
 
@@ -369,7 +359,7 @@ impl<T, E> IterOnes<T, E> {
 
 impl<T, E> Iterator for IterOnes<T, E>
 where
-    T: BitsOwned + Number,
+    T: Number,
     E: Endian,
 {
     type Item = u32;
@@ -381,7 +371,7 @@ where
         }
 
         let index = E::zeros(self.bits);
-        self.bits.clear_bit_in::<E>(index);
+        self.bits.and_assign(!E::mask::<T>(index));
         Some(index)
     }
 }
@@ -397,7 +387,7 @@ where
 /// ```
 impl<T, E> DoubleEndedIterator for IterOnes<T, E>
 where
-    T: BitsOwned + Number,
+    T: Number,
     E: Endian,
 {
     #[inline]
@@ -407,14 +397,14 @@ where
         }
 
         let index = E::zeros_rev(self.bits);
-        self.bits.clear_bit_rev::<E>(index);
+        self.bits.and_assign(!E::mask_rev::<T>(index));
         Some(T::BITS - index - 1)
     }
 }
 
 impl<T, E> ExactSizeIterator for IterOnes<T, E>
 where
-    T: BitsOwned + Number,
+    T: Number,
     E: Endian,
 {
     #[inline]
@@ -443,7 +433,7 @@ impl<T, E> IterZeros<T, E> {
 
 impl<T, E> Iterator for IterZeros<T, E>
 where
-    T: BitsMut + Number,
+    T: Number,
     E: Endian,
 {
     type Item = u32;
@@ -455,14 +445,14 @@ where
         }
 
         let index = E::ones(self.bits);
-        self.bits.set_bit_in::<E>(index);
+        self.bits.or_assign(E::mask::<T>(index));
         Some(index)
     }
 }
 
 impl<T, E> ExactSizeIterator for IterZeros<T, E>
 where
-    T: BitsMut + Number,
+    T: Number,
     E: Endian,
 {
     #[inline]
@@ -482,7 +472,7 @@ where
 /// ```
 impl<T, E> DoubleEndedIterator for IterZeros<T, E>
 where
-    T: BitsOwned + Number,
+    T: Number,
     E: Endian,
 {
     #[inline]
@@ -492,7 +482,7 @@ where
         }
 
         let index = E::ones_rev(self.bits);
-        self.bits.set_bit_rev::<E>(index);
+        self.bits.or_assign(E::mask_rev::<T>(index));
         Some(T::BITS - index - 1)
     }
 }

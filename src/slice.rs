@@ -7,7 +7,7 @@ use crate::BitsOwned;
 
 impl<T> Bits for [T]
 where
-    T: Copy + BitsOwned,
+    T: BitsOwned,
 {
     type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
     type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
@@ -213,7 +213,7 @@ where
 
 impl<T> BitsMut for [T]
 where
-    T: Copy + BitsOwned,
+    T: BitsOwned,
 {
     /// Set the given bit is set in the slice.
     ///
@@ -314,32 +314,46 @@ where
 }
 
 /// A borrowing iterator over the bits set to one in a slice.
-#[derive(Clone)]
 pub struct IterOnes<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: Bits,
     E: Endian,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterOnesIn<E>, u32)>,
+    current: Option<(T::IterOnesIn<'a, E>, u32)>,
+}
+
+impl<'a, T, E> Clone for IterOnes<'a, T, E>
+where
+    T: Clone + Bits,
+    E: Endian,
+    T::IterOnesIn<'a, E>: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            current: self.current.clone(),
+        }
+    }
 }
 
 impl<'a, T, E> IterOnes<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: Bits,
     E: Endian,
 {
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.into_iter_ones_in(), 0));
+        let current = iter.next().map(|v| (v.iter_ones_in(), 0));
         Self { iter, current }
     }
 }
 
 impl<'a, T, E> Iterator for IterOnes<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: BitsOwned,
     E: Endian,
 {
     type Item = u32;
@@ -356,7 +370,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_ones_in(),
+                self.iter.next()?.iter_ones_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }
@@ -364,32 +378,46 @@ where
 }
 
 /// A borrowing iterator over the bits set to one in a slice.
-#[derive(Clone)]
 pub struct IterZeros<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: Bits,
     E: Endian,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterZerosIn<E>, u32)>,
+    current: Option<(T::IterZerosIn<'a, E>, u32)>,
+}
+
+impl<'a, T, E> Clone for IterZeros<'a, T, E>
+where
+    T: Clone + Bits,
+    E: Endian,
+    T::IterZerosIn<'a, E>: Clone,
+{
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            iter: self.iter.clone(),
+            current: self.current.clone(),
+        }
+    }
 }
 
 impl<'a, T, E> IterZeros<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: Bits,
     E: Endian,
 {
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.into_iter_zeros_in(), 0));
+        let current = iter.next().map(|v| (v.iter_zeros_in(), 0));
         Self { iter, current }
     }
 }
 
 impl<'a, T, E> Iterator for IterZeros<'a, T, E>
 where
-    T: Copy + BitsOwned,
+    T: BitsOwned,
     E: Endian,
 {
     type Item = u32;
@@ -406,7 +434,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_zeros_in(),
+                self.iter.next()?.iter_zeros_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }

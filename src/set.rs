@@ -777,7 +777,7 @@ macro_rules! owned_ops {
     ($trait:ident::$n:ident, $name:ident<$t:ident, $s:ident>, $fn:ident) => {
         impl<$t, $s> $trait<$name<$t, $s>> for $name<$t, $s>
         where
-            $t: Copy + BitsOwned,
+            $t: BitsOwned,
             $s: Endian,
         {
             type Output = $name<$t, $s>;

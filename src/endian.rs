@@ -103,7 +103,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        value.ones()
+        value.trailing_ones()
     }
 
     #[inline]
@@ -111,7 +111,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        value.ones_rev()
+        value.leading_ones()
     }
 
     #[inline]
@@ -119,7 +119,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        value.zeros()
+        value.trailing_zeros()
     }
 
     #[inline]
@@ -127,7 +127,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        value.zeros_rev()
+        value.leading_zeros()
     }
 }
 
@@ -181,7 +181,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        value.ones_rev()
+        value.leading_ones()
     }
 
     #[inline]
@@ -189,7 +189,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        value.ones()
+        value.trailing_ones()
     }
 
     #[inline]
@@ -197,7 +197,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        value.zeros_rev()
+        value.leading_zeros()
     }
 
     #[inline]
@@ -205,7 +205,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        value.zeros()
+        value.trailing_ones()
     }
 }
 
