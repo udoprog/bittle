@@ -7,27 +7,26 @@ use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
-use crate::shift::{DefaultShift, Shift, Shr};
+use crate::endian::{DefaultEndian, Endian, LittleEndian};
 
 /// Convenience wrapper around bitsets providing the wrapped type with behaviors
 /// you'd expected out of a set-like container.
 ///
 /// <br>
 ///
-/// ## Persistent shift ordering
+/// ## Persistent endianness
 ///
-/// A set can be constructed with a custom shift ordering that it remembers, so
-/// that methods such as [`Bits::iter_ones`] uses the shift ordering in the
-/// type.
+/// A set can be constructed with a custom endianness that it remembers, so that
+/// methods such as [`Bits::iter_ones`] uses the endianness in the type.
 ///
 /// ```
-/// use bittle::{Bits, Set, Shr};
+/// use bittle::{Bits, Set, LittleEndian};
 ///
 /// let set: Set<u16> = bittle::set![1, 12];
 /// assert!(set.iter_ones().eq([1, 12]));
 /// assert_eq!(set.into_bits(), 0b00010000_00000010);
 ///
-/// let set: Set<u16, Shr> = bittle::set![1, 12];
+/// let set: Set<u16, LittleEndian> = bittle::set![1, 12];
 /// assert!(set.iter_ones().eq([1, 12]));
 /// assert_eq!(set.into_bits(), 0b01000000_00001000);
 /// ```
@@ -40,7 +39,7 @@ use crate::shift::{DefaultShift, Shift, Shr};
 /// implementation which shows which bits are actually in use:
 ///
 /// ```
-/// use bittle::{Bits, Set, Shr};
+/// use bittle::{Bits, Set, LittleEndian};
 ///
 /// let set: u128 = bittle::set![1, 14];
 /// assert_eq!(format!("{set:?}"), "16386");
@@ -48,10 +47,10 @@ use crate::shift::{DefaultShift, Shift, Shr};
 /// let set: Set<u128> = Set::new(set);
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 ///
-/// let set: u128 = bittle::set_shr![1, 14];
+/// let set: u128 = bittle::set_le![1, 14];
 /// assert_eq!(format!("{set:?}"), "85080976323951685521100712850600493056");
 ///
-/// let set: Set<u128, Shr> = Set::new_shr(set);
+/// let set: Set<u128, LittleEndian> = Set::new_le(set);
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 /// ```
 ///
@@ -196,18 +195,18 @@ use crate::shift::{DefaultShift, Shift, Shr};
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 #[repr(transparent)]
-pub struct Set<T, S = DefaultShift>
+pub struct Set<T, E = DefaultEndian>
 where
     T: ?Sized,
 {
-    _shift: PhantomData<S>,
+    _shift: PhantomData<E>,
     bits: T,
 }
 
 impl<T> Set<T> {
-    /// Construct a set from its underlying bits using [`DefaultShift`].
+    /// Construct a set from its underlying bits using [`DefaultEndian`].
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -223,34 +222,34 @@ impl<T> Set<T> {
     }
 }
 
-impl<T> Set<T, Shr> {
-    /// Construct a set from its underlying bits using [`Shr`] indexing.
+impl<T> Set<T, LittleEndian> {
+    /// Construct a set from its underlying bits using [`LittleEndian`] indexing.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::new_shr(0b00001001u8);
+    /// let mut set = Set::new_le(0b00001001u8);
     /// assert!(set.iter_ones().eq([4, 7]));
     /// ```
     #[inline]
-    pub const fn new_shr(bits: T) -> Self {
+    pub const fn new_le(bits: T) -> Self {
         Self::new_in(bits)
     }
 }
 
-impl<T, S> Set<T, S> {
-    /// Construct a set from its underlying bits using custom shift indexing.
+impl<T, E> Set<T, E> {
+    /// Construct a set from its underlying bits using custom endianness.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Set, Shr};
+    /// use bittle::{Bits, Set, LittleEndian};
     ///
-    /// let mut set: Set<u8, Shr> = Set::new_in(0b00001001u8);
+    /// let mut set: Set<u8, LittleEndian> = Set::new_in(0b00001001u8);
     /// assert!(set.iter_ones().eq([4, 7]));
-    /// assert!(set.iter_ones_in::<Shr>().eq([4, 7]));
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([4, 7]));
     /// ```
     #[inline]
     pub const fn new_in(bits: T) -> Self {
@@ -270,7 +269,7 @@ impl<T, S> Set<T, S> {
     /// let mut set = Set::new(0b00001001u8);
     /// assert_eq!(set.into_bits(), 0b00001001u8);
     ///
-    /// let mut set = Set::new_shr(0b00001001u8);
+    /// let mut set = Set::new_le(0b00001001u8);
     /// assert_eq!(set.into_bits(), 0b00001001u8);
     /// ```
     #[inline]
@@ -283,7 +282,7 @@ impl<T> Set<T>
 where
     T: ?Sized,
 {
-    /// Wrap a reference as a set using [`DefaultShift`] indexing.
+    /// Wrap a reference as a set using [`DefaultEndian`] indexing.
     ///
     /// # Examples
     ///
@@ -303,7 +302,7 @@ where
         unsafe { &*(bits.as_ref() as *const _ as *const _) }
     }
 
-    /// Wrap a mutable reference as a set using [`DefaultShift`] indexing.
+    /// Wrap a mutable reference as a set using [`DefaultEndian`] indexing.
     ///
     /// # Examples
     ///
@@ -329,22 +328,22 @@ where
     }
 }
 
-impl<T> Set<T, Shr>
+impl<T> Set<T, LittleEndian>
 where
     T: ?Sized,
 {
-    /// Wrap a reference as a set using [`Shr`] indexing.
+    /// Wrap a reference as a set using [`LittleEndian`] indexing.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::from_ref_shr(&[0b00000001u8, 0b00010000u8]);
-    /// assert!(set.iter_ones_shr().eq([7, 11]));
+    /// let mut set = Set::from_ref_le(&[0b00000001u8, 0b00010000u8]);
+    /// assert!(set.iter_ones_le().eq([7, 11]));
     /// ```
     #[inline]
-    pub fn from_ref_shr<U>(bits: &U) -> &Self
+    pub fn from_ref_le<U>(bits: &U) -> &Self
     where
         U: ?Sized + AsRef<T>,
     {
@@ -353,23 +352,23 @@ where
         unsafe { &*(bits.as_ref() as *const _ as *const _) }
     }
 
-    /// Wrap a mutable reference as a set using [`Shr`] indexing.
+    /// Wrap a mutable reference as a set using [`LittleEndian`] indexing.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsMut, Set, Shr};
+    /// use bittle::{Bits, BitsMut, Set, LittleEndian};
     ///
     /// let mut values = [0b00000001u8, 0b00010000u8];
     ///
-    /// let mut set = Set::from_mut_shr(&mut values);
-    /// assert!(set.iter_ones_shr().eq([7, 11]));
+    /// let mut set = Set::from_mut_le(&mut values);
+    /// assert!(set.iter_ones_le().eq([7, 11]));
     ///
     /// set.set_bit(4);
     /// assert_eq!(&values[..], &[0b00001001u8, 0b00010000u8]);
     /// ```
     #[inline]
-    pub fn from_mut_shr<U>(bits: &mut U) -> &mut Self
+    pub fn from_mut_le<U>(bits: &mut U) -> &mut Self
     where
         U: ?Sized + AsMut<T>,
     {
@@ -379,10 +378,10 @@ where
     }
 }
 
-impl<T, S> Default for Set<T, S>
+impl<T, E> Default for Set<T, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     /// Construct a new empty set.
     ///
@@ -406,25 +405,25 @@ where
 impl<T, U> Bits for Set<T, U>
 where
     T: ?Sized + Bits,
-    U: Shift,
+    U: Endian,
 {
-    type IterOnes<'a> = T::IterOnesWith<'a, U>
+    type IterOnes<'a> = T::IterOnesIn<'a, U>
     where
         Self: 'a;
 
-    type IterOnesWith<'a, S> = T::IterOnesWith<'a, S>
+    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
-    type IterZeros<'a> = T::IterZerosWith<'a, U>
+    type IterZeros<'a> = T::IterZerosIn<'a, U>
     where
         Self: 'a;
 
-    type IterZerosWith<'a, S> = T::IterZerosWith<'a, S>
+    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
     #[inline]
     fn count_ones(&self) -> u32 {
@@ -452,11 +451,11 @@ where
     }
 
     #[inline]
-    fn test_bit_in<S>(&self, index: u32) -> bool
+    fn test_bit_in<E>(&self, index: u32) -> bool
     where
-        S: Shift,
+        E: Endian,
     {
-        self.bits.test_bit_in::<S>(index)
+        self.bits.test_bit_in::<E>(index)
     }
 
     #[inline]
@@ -470,9 +469,9 @@ where
     }
 
     #[inline]
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         self.bits.iter_ones_in()
     }
@@ -483,9 +482,9 @@ where
     }
 
     #[inline]
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         self.bits.iter_zeros_in()
     }
@@ -494,14 +493,14 @@ where
 impl<T, U> BitsMut for Set<T, U>
 where
     T: ?Sized + BitsMut,
-    U: Shift,
+    U: Endian,
 {
     #[inline]
-    fn set_bit_in<S>(&mut self, index: u32)
+    fn set_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self.bits.set_bit_in::<S>(index);
+        self.bits.set_bit_in::<E>(index);
     }
 
     #[inline]
@@ -510,11 +509,11 @@ where
     }
 
     #[inline]
-    fn clear_bit_in<S>(&mut self, index: u32)
+    fn clear_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self.bits.clear_bit_in::<S>(index);
+        self.bits.clear_bit_in::<E>(index);
     }
 
     #[inline]
@@ -551,16 +550,16 @@ where
 impl<T, U> BitsOwned for Set<T, U>
 where
     T: BitsOwned,
-    U: Shift,
+    U: Endian,
 {
     const BITS: u32 = T::BITS;
     const ONES: Self = Self::new_in(T::ONES);
     const ZEROS: Self = Self::new_in(T::ZEROS);
 
-    type IntoIterOnes = T::IntoIterOnesWith<U>;
-    type IntoIterOnesWith<S> = T::IntoIterOnesWith<S> where S: Shift;
-    type IntoIterZeros = T::IntoIterZerosWith<U>;
-    type IntoIterZerosWith<S> = T::IntoIterZerosWith<S> where S: Shift;
+    type IntoIterOnes = T::IntoIterOnesIn<U>;
+    type IntoIterOnesIn<E> = T::IntoIterOnesIn<E> where E: Endian;
+    type IntoIterZeros = T::IntoIterZerosIn<U>;
+    type IntoIterZerosIn<E> = T::IntoIterZerosIn<E> where E: Endian;
 
     #[inline]
     fn zeros() -> Self {
@@ -573,19 +572,29 @@ where
     }
 
     #[inline]
-    fn with_bit_in<S>(self, bit: u32) -> Self
+    fn with_bit_in<E>(self, bit: u32) -> Self
     where
-        S: Shift,
+        E: Endian,
     {
-        Self::new_in(self.bits.with_bit_in::<S>(bit))
+        Self::new_in(self.bits.with_bit_in::<E>(bit))
     }
 
     #[inline]
-    fn without_bit_in<S>(self, bit: u32) -> Self
+    fn with_bit(self, bit: u32) -> Self {
+        Self::new_in(self.bits.with_bit_in::<U>(bit))
+    }
+
+    #[inline]
+    fn without_bit_in<E>(self, bit: u32) -> Self
     where
-        S: Shift,
+        E: Endian,
     {
-        Self::new_in(self.bits.without_bit_in::<S>(bit))
+        Self::new_in(self.bits.without_bit_in::<E>(bit))
+    }
+
+    #[inline]
+    fn without_bit(self, bit: u32) -> Self {
+        Self::new_in(self.bits.without_bit_in::<U>(bit))
     }
 
     #[inline]
@@ -614,9 +623,9 @@ where
     }
 
     #[inline]
-    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<E>(self) -> Self::IntoIterOnesIn<E>
     where
-        S: Shift,
+        E: Endian,
     {
         self.bits.into_iter_ones_in()
     }
@@ -627,15 +636,15 @@ where
     }
 
     #[inline]
-    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<E>(self) -> Self::IntoIterZerosIn<E>
     where
-        S: Shift,
+        E: Endian,
     {
         self.bits.into_iter_zeros_in()
     }
 }
 
-impl<T, S> Clone for Set<T, S>
+impl<T, E> Clone for Set<T, E>
 where
     T: Clone,
 {
@@ -645,16 +654,16 @@ where
     }
 }
 
-impl<T, S> Copy for Set<T, S> where T: Copy {}
+impl<T, E> Copy for Set<T, E> where T: Copy {}
 
-impl<T, S> fmt::Debug for Set<T, S>
+impl<T, E> fmt::Debug for Set<T, E>
 where
     T: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_set().entries(self.iter_ones_in::<S>()).finish()
+        f.debug_set().entries(self.iter_ones_in::<E>()).finish()
     }
 }
 
@@ -672,50 +681,50 @@ where
 /// assert_eq!(a, b);
 /// assert_eq!(a, c);
 /// ```
-impl<T, U, S> cmp::PartialEq<U> for Set<T, S>
+impl<T, U, E> cmp::PartialEq<U> for Set<T, E>
 where
     T: ?Sized + Bits,
     U: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn eq(&self, other: &U) -> bool {
-        self.iter_ones_in::<S>().eq(other.iter_ones_in::<S>())
+        self.iter_ones_in::<E>().eq(other.iter_ones_in::<E>())
     }
 }
 
-impl<T, S> cmp::Eq for Set<T, S>
+impl<T, E> cmp::Eq for Set<T, E>
 where
     T: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
 }
 
-impl<T, U, S> cmp::PartialOrd<U> for Set<T, S>
+impl<T, U, E> cmp::PartialOrd<U> for Set<T, E>
 where
     T: ?Sized + Bits,
     U: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn partial_cmp(&self, other: &U) -> Option<cmp::Ordering> {
-        self.iter_ones_in::<S>()
-            .partial_cmp(other.iter_ones_in::<S>())
+        self.iter_ones_in::<E>()
+            .partial_cmp(other.iter_ones_in::<E>())
     }
 }
 
-impl<T, S> cmp::Ord for Set<T, S>
+impl<T, E> cmp::Ord for Set<T, E>
 where
     T: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.iter_ones_in::<S>().cmp(other.iter_ones_in::<S>())
+        self.iter_ones_in::<E>().cmp(other.iter_ones_in::<E>())
     }
 }
 
-impl<T, S> Hash for Set<T, S>
+impl<T, E> Hash for Set<T, E>
 where
     T: ?Sized + Hash,
 {
@@ -725,12 +734,12 @@ where
     }
 }
 
-impl<T, S> IntoIterator for Set<T, S>
+impl<T, E> IntoIterator for Set<T, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
-    type IntoIter = T::IntoIterOnesWith<S>;
+    type IntoIter = T::IntoIterOnesIn<E>;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
@@ -739,24 +748,24 @@ where
     }
 }
 
-impl<'a, T, S> IntoIterator for &'a Set<T, S>
+impl<'a, T, E> IntoIterator for &'a Set<T, E>
 where
     T: ?Sized + Bits,
-    S: Shift,
+    E: Endian,
 {
-    type IntoIter = T::IterOnesWith<'a, S>;
+    type IntoIter = T::IterOnesIn<'a, E>;
     type Item = <Self::IntoIter as Iterator>::Item;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.iter_ones_in::<S>()
+        self.iter_ones_in::<E>()
     }
 }
 
-impl<T, S> From<T> for Set<T, S>
+impl<T, E> From<T> for Set<T, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn from(bits: T) -> Self {
@@ -769,7 +778,7 @@ macro_rules! owned_ops {
         impl<$t, $s> $trait<$name<$t, $s>> for $name<$t, $s>
         where
             $t: Copy + BitsOwned,
-            $s: Shift,
+            $s: Endian,
         {
             type Output = $name<$t, $s>;
 
@@ -782,7 +791,7 @@ macro_rules! owned_ops {
         impl<$t, $s> $trait<&$name<$t, $s>> for $name<$t, $s>
         where
             $t: Copy + BitsOwned,
-            $s: Shift,
+            $s: Endian,
         {
             type Output = $name<$t, $s>;
 
@@ -795,7 +804,7 @@ macro_rules! owned_ops {
         impl<$t, $s> $trait<$name<$t, $s>> for &$name<$t, $s>
         where
             $t: Copy + BitsOwned,
-            $s: Shift,
+            $s: Endian,
         {
             type Output = $name<$t, $s>;
 
@@ -808,7 +817,7 @@ macro_rules! owned_ops {
         impl<$t, $s> $trait<&$name<$t, $s>> for &$name<$t, $s>
         where
             $t: Copy + BitsOwned,
-            $s: Shift,
+            $s: Endian,
         {
             type Output = $name<$t, $s>;
 
@@ -854,15 +863,15 @@ macro_rules! assign_ops {
     };
 }
 
-owned_ops!(BitOr::bitor, Set<T, S>, union);
-assign_ops!(BitOrAssign::bitor_assign, Set<T, S>, union_assign);
-owned_ops!(BitAnd::bitand, Set<T, S>, conjunction);
-assign_ops!(BitAndAssign::bitand_assign, Set<T, S>, conjunction_assign);
-owned_ops!(BitXor::bitxor, Set<T, S>, symmetric_difference);
+owned_ops!(BitOr::bitor, Set<T, E>, union);
+assign_ops!(BitOrAssign::bitor_assign, Set<T, E>, union_assign);
+owned_ops!(BitAnd::bitand, Set<T, E>, conjunction);
+assign_ops!(BitAndAssign::bitand_assign, Set<T, E>, conjunction_assign);
+owned_ops!(BitXor::bitxor, Set<T, E>, symmetric_difference);
 assign_ops!(
     BitXorAssign::bitxor_assign,
-    Set<T, S>,
+    Set<T, E>,
     symmetric_difference_assign
 );
-owned_ops!(Sub::sub, Set<T, S>, difference);
-assign_ops!(SubAssign::sub_assign, Set<T, S>, difference_assign);
+owned_ops!(Sub::sub, Set<T, E>, difference);
+assign_ops!(SubAssign::sub_assign, Set<T, E>, difference_assign);

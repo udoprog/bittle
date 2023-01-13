@@ -2,17 +2,17 @@
 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
-use crate::shift::{DefaultShift, Shift};
+use crate::endian::{DefaultEndian, Endian};
 use crate::BitsOwned;
 
 impl<T> Bits for [T]
 where
     T: Copy + BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T, DefaultShift> where Self: 'a;
-    type IterOnesWith<'a, S> = IterOnes<'a, T, S> where Self: 'a, S: Shift;
-    type IterZeros<'a> = IterZeros<'a, T, DefaultShift> where Self: 'a;
-    type IterZerosWith<'a, S> = IterZeros<'a, T, S> where Self: 'a, S: Shift;
+    type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
+    type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
+    type IterZeros<'a> = IterZeros<'a, T, DefaultEndian> where Self: 'a;
+    type IterZerosIn<'a, E> = IterZeros<'a, T, E> where Self: 'a, E: Endian;
 
     /// Count the number of ones in the slice.
     ///
@@ -110,6 +110,25 @@ where
     /// # Examples
     ///
     /// ```
+    /// use bittle::{Bits, BigEndian};
+    ///
+    /// let mut a: [u8; 2] = bittle::set_be![4, 11, 14];
+    /// let a: &[u8] = a.as_slice();
+    /// assert!(a.test_bit_in::<BigEndian>(4));
+    /// ```
+    #[inline]
+    fn test_bit_in<E>(&self, index: u32) -> bool
+    where
+        E: Endian,
+    {
+        self[((index / T::BITS) as usize % self.len())].test_bit_in::<E>(index % T::BITS)
+    }
+
+    /// Test if the given bit is set in the slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
     /// use bittle::Bits;
     ///
     /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
@@ -117,14 +136,11 @@ where
     /// assert!(a.test_bit(4));
     /// ```
     #[inline]
-    fn test_bit_in<S>(&self, index: u32) -> bool
-    where
-        S: Shift,
-    {
-        self[((index / T::BITS) as usize % self.len())].test_bit_in::<S>(index % T::BITS)
+    fn test_bit(&self, index: u32) -> bool {
+        self.test_bit_in::<DefaultEndian>(index)
     }
 
-    /// Iterates over all ones in the slice using the default shift ordering.
+    /// Iterates over all ones in the slice using [`DefaultEndian`] indexing.
     ///
     /// # Examples
     ///
@@ -140,7 +156,7 @@ where
         IterOnes::new(self)
     }
 
-    /// Iterates over all ones in the slice using a custom shift ordering.
+    /// Iterates over all ones in the slice using a custom [`Endian`] indexing.
     ///
     /// # Examples
     ///
@@ -152,14 +168,14 @@ where
     /// assert!(a.iter_ones().eq([4, 11, 14]));
     /// ```
     #[inline]
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         IterOnes::new(self)
     }
 
-    /// Iterates over all zeros in the slice using the default shift ordering.
+    /// Iterates over all zeros in the slice using [`DefaultEndian`] indexing.
     ///
     /// # Examples
     ///
@@ -175,7 +191,7 @@ where
         IterZeros::new(self)
     }
 
-    /// Iterates over all zeros in the slice using a custom shift ordering.
+    /// Iterates over all zeros in the slice using a custom [`Endian`] indexing
     ///
     /// # Examples
     ///
@@ -187,9 +203,9 @@ where
     /// assert!(a.iter_zeros().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
     /// ```
     #[inline]
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         IterZeros::new(self)
     }
@@ -212,11 +228,16 @@ where
     /// assert!(a.iter_ones().eq([7, 13]));
     /// ```
     #[inline]
-    fn set_bit_in<S>(&mut self, index: u32)
+    fn set_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self[((index / T::BITS) as usize % self.len())].set_bit_in::<S>(index % T::BITS);
+        self[((index / T::BITS) as usize % self.len())].set_bit_in::<E>(index % T::BITS);
+    }
+
+    #[inline]
+    fn set_bit(&mut self, index: u32) {
+        self.set_bit_in::<DefaultEndian>(index);
     }
 
     /// Set the given bit is set in the slice.
@@ -232,11 +253,16 @@ where
     /// assert!(a.iter_ones().eq([7]));
     /// ```
     #[inline]
-    fn clear_bit_in<S>(&mut self, index: u32)
+    fn clear_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self[((index / T::BITS) as usize % self.len())].clear_bit_in::<S>(index % T::BITS);
+        self[((index / T::BITS) as usize % self.len())].clear_bit_in::<E>(index % T::BITS);
+    }
+
+    #[inline]
+    fn clear_bit(&mut self, index: u32) {
+        self.clear_bit_in::<DefaultEndian>(index);
     }
 
     /// Clear the entire slice, or set all bits to zeros.
@@ -289,19 +315,19 @@ where
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterOnes<'a, T, S>
+pub struct IterOnes<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterOnesWith<S>, u32)>,
+    current: Option<(T::IntoIterOnesIn<E>, u32)>,
 }
 
-impl<'a, T, S> IterOnes<'a, T, S>
+impl<'a, T, E> IterOnes<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
@@ -311,10 +337,10 @@ where
     }
 }
 
-impl<'a, T, S> Iterator for IterOnes<'a, T, S>
+impl<'a, T, E> Iterator for IterOnes<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 
@@ -339,19 +365,19 @@ where
 
 /// A borrowing iterator over the bits set to one in a slice.
 #[derive(Clone)]
-pub struct IterZeros<'a, T, S>
+pub struct IterZeros<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IntoIterZerosWith<S>, u32)>,
+    current: Option<(T::IntoIterZerosIn<E>, u32)>,
 }
 
-impl<'a, T, S> IterZeros<'a, T, S>
+impl<'a, T, E> IterZeros<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
@@ -361,10 +387,10 @@ where
     }
 }
 
-impl<'a, T, S> Iterator for IterZeros<'a, T, S>
+impl<'a, T, E> Iterator for IterZeros<'a, T, E>
 where
     T: Copy + BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 

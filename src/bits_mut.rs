@@ -1,5 +1,5 @@
 use crate::bits::Bits;
-use crate::shift::{Shift, Shl, Shr};
+use crate::endian::{BigEndian, Endian, LittleEndian};
 
 /// Bitset mutable operations.
 ///
@@ -35,15 +35,15 @@ pub trait BitsMut: Bits {
     /// Set the given bit.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
-    fn set_bit_in<S>(&mut self, index: u32)
+    fn set_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift;
+        E: Endian;
 
-    /// Set the given bit using [`DefaultShift`].
+    /// Set the given bit using [`DefaultEndian`].
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -81,12 +81,9 @@ pub trait BitsMut: Bits {
     /// assert!(a.test_bit(1));
     /// assert!(a.test_bit(127));
     /// ```
-    #[inline]
-    fn set_bit(&mut self, index: u32) {
-        self.set_bit_in::<Shl>(index);
-    }
+    fn set_bit(&mut self, index: u32);
 
-    /// Set the given bit using [`Shr`] indexing.
+    /// Set the given bit using [`LittleEndian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
@@ -96,11 +93,11 @@ pub trait BitsMut: Bits {
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut a = 0u32;
-    /// assert!(!a.test_bit_shr(32));
-    /// a.set_bit_shr(0);
-    /// assert!(a.test_bit_shr(32));
-    /// a.clear_bit_shr(32);
-    /// assert!(!a.test_bit_shr(0));
+    /// assert!(!a.test_bit_le(32));
+    /// a.set_bit_le(0);
+    /// assert!(a.test_bit_le(32));
+    /// a.clear_bit_le(32);
+    /// assert!(!a.test_bit_le(0));
     /// ```
     ///
     /// Using a bigger set:
@@ -110,39 +107,84 @@ pub trait BitsMut: Bits {
     ///
     /// let mut a = u128::ones();
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     ///
-    /// a.clear_bit_shr(1);
+    /// a.clear_bit_le(1);
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(!a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(!a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     ///
-    /// a.set_bit_shr(1);
+    /// a.set_bit_le(1);
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     /// ```
     #[inline]
-    fn set_bit_shr(&mut self, index: u32) {
-        self.set_bit_in::<Shr>(index);
+    fn set_bit_le(&mut self, index: u32) {
+        self.set_bit_in::<LittleEndian>(index);
     }
 
-    /// Clear the given bit with a custom shift ordering.
+    /// Set the given bit using [`LittleEndian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
-    fn clear_bit_in<S>(&mut self, index: u32)
-    where
-        S: Shift;
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = 0u32;
+    /// assert!(!a.test_bit_be(32));
+    /// a.set_bit_be(0);
+    /// assert!(a.test_bit_be(32));
+    /// a.clear_bit_be(32);
+    /// assert!(!a.test_bit_be(0));
+    /// ```
+    ///
+    /// Using a bigger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = u128::ones();
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    ///
+    /// a.clear_bit_be(1);
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(!a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    ///
+    /// a.set_bit_be(1);
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    /// ```
+    #[inline]
+    fn set_bit_be(&mut self, index: u32) {
+        self.set_bit_in::<BigEndian>(index);
+    }
 
-    /// Clear the given bit using [`DefaultShift`].
+    /// Clear the given bit with a custom [`Endian`] indexing.
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    fn clear_bit_in<E>(&mut self, index: u32)
+    where
+        E: Endian;
+
+    /// Clear the given bit using [`DefaultEndian`].
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -180,12 +222,9 @@ pub trait BitsMut: Bits {
     /// assert!(a.test_bit(1));
     /// assert!(a.test_bit(127));
     /// ```
-    #[inline]
-    fn clear_bit(&mut self, index: u32) {
-        self.clear_bit_in::<Shl>(index);
-    }
+    fn clear_bit(&mut self, index: u32);
 
-    /// Clear the given bit using [`Shr`] indexing.
+    /// Clear the given bit using [`LittleEndian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
@@ -195,11 +234,11 @@ pub trait BitsMut: Bits {
     /// use bittle::{Bits, BitsMut, BitsOwned};
     ///
     /// let mut a = 0u32;
-    /// assert!(!a.test_bit_shr(32));
-    /// a.set_bit_shr(0);
-    /// assert!(a.test_bit_shr(32));
-    /// a.clear_bit_shr(32);
-    /// assert!(!a.test_bit_shr(0));
+    /// assert!(!a.test_bit_le(32));
+    /// a.set_bit_le(0);
+    /// assert!(a.test_bit_le(32));
+    /// a.clear_bit_le(32);
+    /// assert!(!a.test_bit_le(0));
     /// ```
     ///
     /// Example using array:
@@ -209,25 +248,70 @@ pub trait BitsMut: Bits {
     ///
     /// let mut a = u128::ones();
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     ///
-    /// a.clear_bit_shr(1);
+    /// a.clear_bit_le(1);
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(!a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(!a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     ///
-    /// a.set_bit_shr(1);
+    /// a.set_bit_le(1);
     ///
-    /// assert!(a.test_bit_shr(0));
-    /// assert!(a.test_bit_shr(1));
-    /// assert!(a.test_bit_shr(127));
+    /// assert!(a.test_bit_le(0));
+    /// assert!(a.test_bit_le(1));
+    /// assert!(a.test_bit_le(127));
     /// ```
     #[inline]
-    fn clear_bit_shr(&mut self, index: u32) {
-        self.clear_bit_in::<Shr>(index);
+    fn clear_bit_le(&mut self, index: u32) {
+        self.clear_bit_in::<LittleEndian>(index);
+    }
+
+    /// Clear the given bit using [`BigEndian`] indexing.
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = 0u32;
+    /// assert!(!a.test_bit_be(32));
+    /// a.set_bit_be(0);
+    /// assert!(a.test_bit_be(32));
+    /// a.clear_bit_be(32);
+    /// assert!(!a.test_bit_be(0));
+    /// ```
+    ///
+    /// Example using array:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = u128::ones();
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    ///
+    /// a.clear_bit_be(1);
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(!a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    ///
+    /// a.set_bit_be(1);
+    ///
+    /// assert!(a.test_bit_be(0));
+    /// assert!(a.test_bit_be(1));
+    /// assert!(a.test_bit_be(127));
+    /// ```
+    #[inline]
+    fn clear_bit_be(&mut self, index: u32) {
+        self.clear_bit_in::<BigEndian>(index);
     }
 
     /// Clear the entire bit pattern.
@@ -415,11 +499,11 @@ where
     T: ?Sized + BitsMut,
 {
     #[inline]
-    fn set_bit_in<S>(&mut self, index: u32)
+    fn set_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        (**self).set_bit_in::<S>(index);
+        (**self).set_bit_in::<E>(index);
     }
 
     #[inline]
@@ -428,11 +512,11 @@ where
     }
 
     #[inline]
-    fn clear_bit_in<S>(&mut self, index: u32)
+    fn clear_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        (**self).clear_bit_in::<S>(index);
+        (**self).clear_bit_in::<E>(index);
     }
 
     #[inline]

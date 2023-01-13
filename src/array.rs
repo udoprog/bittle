@@ -3,7 +3,7 @@
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
-use crate::shift::{DefaultShift, Shift};
+use crate::endian::{DefaultEndian, Endian};
 use crate::slice::{IterOnes, IterZeros};
 
 impl<T, const N: usize> BitsOwned for [T; N]
@@ -18,10 +18,10 @@ where
     const ZEROS: Self = [T::ZEROS; N];
     const ONES: Self = [T::ONES; N];
 
-    type IntoIterOnes = IntoIterOnes<T, N, DefaultShift>;
-    type IntoIterOnesWith<S> = IntoIterOnes<T, N, S> where S: Shift;
-    type IntoIterZeros = IntoIterZeros<T, N, DefaultShift>;
-    type IntoIterZerosWith<S> = IntoIterZeros<T, N, S> where S: Shift;
+    type IntoIterOnes = IntoIterOnes<T, N, DefaultEndian>;
+    type IntoIterOnesIn<E> = IntoIterOnes<T, N, E> where E: Endian;
+    type IntoIterZeros = IntoIterZeros<T, N, DefaultEndian>;
+    type IntoIterZerosIn<E> = IntoIterZeros<T, N, E> where E: Endian;
 
     #[inline]
     fn zeros() -> Self {
@@ -34,21 +34,31 @@ where
     }
 
     #[inline]
-    fn with_bit_in<S>(mut self, bit: u32) -> Self
+    fn with_bit_in<E>(mut self, bit: u32) -> Self
     where
-        S: Shift,
+        E: Endian,
     {
-        self[(bit / T::BITS) as usize % N].set_bit_in::<S>(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].set_bit_in::<E>(bit % T::BITS);
         self
     }
 
     #[inline]
-    fn without_bit_in<S>(mut self, bit: u32) -> Self
+    fn with_bit(self, bit: u32) -> Self {
+        self.with_bit_in::<DefaultEndian>(bit)
+    }
+
+    #[inline]
+    fn without_bit_in<E>(mut self, bit: u32) -> Self
     where
-        S: Shift,
+        E: Endian,
     {
-        self[(bit / T::BITS) as usize % N].clear_bit_in::<S>(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].clear_bit_in::<E>(bit % T::BITS);
         self
+    }
+
+    #[inline]
+    fn without_bit(self, bit: u32) -> Self {
+        self.without_bit_in::<DefaultEndian>(bit)
     }
 
     #[inline]
@@ -93,9 +103,9 @@ where
     }
 
     #[inline]
-    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<E>(self) -> Self::IntoIterOnesIn<E>
     where
-        S: Shift,
+        E: Endian,
     {
         IntoIterOnes::new(self)
     }
@@ -106,9 +116,9 @@ where
     }
 
     #[inline]
-    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<E>(self) -> Self::IntoIterZerosIn<E>
     where
-        S: Shift,
+        E: Endian,
     {
         IntoIterZeros::new(self)
     }
@@ -118,10 +128,10 @@ impl<T, const N: usize> Bits for [T; N]
 where
     T: Copy + Eq + BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T, DefaultShift> where Self: 'a;
-    type IterOnesWith<'a, S> = IterOnes<'a, T, S> where Self: 'a, S: Shift;
-    type IterZeros<'a> = IterZeros<'a, T, DefaultShift> where Self: 'a;
-    type IterZerosWith<'a, S> = IterZeros<'a, T, S> where Self: 'a, S: Shift;
+    type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
+    type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
+    type IterZeros<'a> = IterZeros<'a, T, DefaultEndian> where Self: 'a;
+    type IterZerosIn<'a, E> = IterZeros<'a, T, E> where Self: 'a, E: Endian;
 
     #[inline]
     fn count_ones(&self) -> u32 {
@@ -149,11 +159,16 @@ where
     }
 
     #[inline]
-    fn test_bit_in<S>(&self, index: u32) -> bool
+    fn test_bit_in<E>(&self, index: u32) -> bool
     where
-        S: Shift,
+        E: Endian,
     {
-        self[(index / T::BITS) as usize % N].test_bit_in::<S>(index % T::BITS)
+        self[(index / T::BITS) as usize % N].test_bit_in::<E>(index % T::BITS)
+    }
+
+    #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        self.test_bit_in::<DefaultEndian>(index)
     }
 
     #[inline]
@@ -162,9 +177,9 @@ where
     }
 
     #[inline]
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         IterOnes::new(self)
     }
@@ -175,9 +190,9 @@ where
     }
 
     #[inline]
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         IterZeros::new(self)
     }
@@ -188,19 +203,29 @@ where
     T: Copy + Eq + BitsOwned,
 {
     #[inline]
-    fn set_bit_in<S>(&mut self, index: u32)
+    fn set_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self[(index / T::BITS) as usize % N].set_bit_in::<S>(index % T::BITS);
+        self[(index / T::BITS) as usize % N].set_bit_in::<E>(index % T::BITS);
     }
 
     #[inline]
-    fn clear_bit_in<S>(&mut self, index: u32)
+    fn set_bit(&mut self, index: u32) {
+        self.set_bit_in::<DefaultEndian>(index);
+    }
+
+    #[inline]
+    fn clear_bit_in<E>(&mut self, index: u32)
     where
-        S: Shift,
+        E: Endian,
     {
-        self[(index / T::BITS) as usize % N].clear_bit_in::<S>(index % T::BITS);
+        self[(index / T::BITS) as usize % N].clear_bit_in::<E>(index % T::BITS);
+    }
+
+    #[inline]
+    fn clear_bit(&mut self, index: u32) {
+        self.clear_bit_in::<DefaultEndian>(index);
     }
 
     #[inline]
@@ -241,19 +266,19 @@ where
 
 /// An owned iterator over the bits set to one in an array.
 #[derive(Clone)]
-pub struct IntoIterOnes<T, const N: usize, S>
+pub struct IntoIterOnes<T, const N: usize, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterOnesWith<S>, u32)>,
+    current: Option<(T::IntoIterOnesIn<E>, u32)>,
 }
 
-impl<T, const N: usize, S> IntoIterOnes<T, N, S>
+impl<T, const N: usize, E> IntoIterOnes<T, N, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn new(array: [T; N]) -> Self {
@@ -263,10 +288,10 @@ where
     }
 }
 
-impl<T, const N: usize, S> Iterator for IntoIterOnes<T, N, S>
+impl<T, const N: usize, E> Iterator for IntoIterOnes<T, N, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 
@@ -288,19 +313,19 @@ where
 
 /// An owned iterator over the bits set to zero in an array.
 #[derive(Clone)]
-pub struct IntoIterZeros<T, const N: usize, S>
+pub struct IntoIterZeros<T, const N: usize, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterZerosWith<S>, u32)>,
+    current: Option<(T::IntoIterZerosIn<E>, u32)>,
 }
 
-impl<T, const N: usize, S> IntoIterZeros<T, N, S>
+impl<T, const N: usize, E> IntoIterZeros<T, N, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn new(array: [T; N]) -> Self {
@@ -310,10 +335,10 @@ where
     }
 }
 
-impl<T, const N: usize, S> Iterator for IntoIterZeros<T, N, S>
+impl<T, const N: usize, E> Iterator for IntoIterZeros<T, N, E>
 where
     T: BitsOwned,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 

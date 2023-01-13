@@ -1,53 +1,62 @@
-//! Traits for dealing with shift ordering.
+//! Traits for dealing with bitset endianness.
+//!
+//! Endianness typically refers to the order in which bytes are in memory, but
+//! here the concept refers to the order in which bits are addressed when you
+//! consider the binary literal of a primitive.
+//!
+//! * [`BigEndian`] where the bit furthest to the left refers to the highest
+//!   index.
+//! * [`LittleEndian`] where the bit furthest to the left refers to the lowest
+//!   index.
+
+#![allow(clippy::module_name_repetitions)]
 
 use crate::number::Number;
 
 mod sealed {
     pub trait Sealed {}
-    impl Sealed for super::Shl {}
-    impl Sealed for super::Shr {}
+    impl Sealed for super::BigEndian {}
+    impl Sealed for super::LittleEndian {}
 }
 
-/// Trait governing how a shift operation is performed over a number.
-pub trait Shift: 'static + self::sealed::Sealed {
-    /// Generate an overflowing mask for the given index.
+/// Trait governing endian-dependent operations for a primitive.
+pub trait Endian: 'static + self::sealed::Sealed {
+    #[doc(hidden)]
     fn mask<T>(index: u32) -> T
     where
         T: Number;
 
-    /// Generate a reverse overflowing mask at the given index, that is at
-    /// the `BITS - index - 1` bit location.
+    #[doc(hidden)]
     fn mask_rev<T>(index: u32) -> T
     where
         T: Number;
 
-    /// Count the number of "leading" ones.
+    #[doc(hidden)]
     fn ones<T>(value: T) -> u32
     where
         T: Number;
 
-    /// Count the number of "trailing" ones.
+    #[doc(hidden)]
     fn ones_rev<T>(value: T) -> u32
     where
         T: Number;
 
-    /// Count the number of "leading" zeros.
+    #[doc(hidden)]
     fn zeros<T>(value: T) -> u32
     where
         T: Number;
 
-    /// Count the number of "trailing" zeros.
+    #[doc(hidden)]
     fn zeros_rev<T>(value: T) -> u32
     where
         T: Number;
 }
 
-/// Shift-left indexing for bit sets.
+/// Big-endian indexing for bit sets.
 ///
-/// This can be used in combination with methods such as
-/// [`Bits::test_bit_in`].
+/// This can be used in combination with methods such as [`Bits::test_bit_in`].
 ///
-/// Shift-left indexing is constructed increasingly from right to left for
+/// Big-endian indexing is constructed increasingly from right to left for
 /// individual primitives, such as the following [`u8`] literal:
 ///
 /// ```text
@@ -57,8 +66,8 @@ pub trait Shift: 'static + self::sealed::Sealed {
 /// ```
 ///
 /// Arrays are treated the same as expected where the index grows from smallest
-/// to largest address, but each interior primitive is indexed using shift left
-/// indexing:
+/// to largest address, but each interior primitive is indexed in big endian
+/// ordering.
 ///
 /// ```text
 ///  0 --------- 8  8 -------- 15
@@ -70,9 +79,9 @@ pub trait Shift: 'static + self::sealed::Sealed {
 ///
 /// [`Bits::test_bit_in`]: crate::Bits::test_bit_in
 #[non_exhaustive]
-pub struct Shl;
+pub struct BigEndian;
 
-impl Shift for Shl {
+impl Endian for BigEndian {
     #[inline]
     fn mask<T>(index: u32) -> T
     where
@@ -122,12 +131,11 @@ impl Shift for Shl {
     }
 }
 
-/// Shift-right indexing for bit sets.
+/// Little-endian indexing for bit sets.
 ///
-/// This can be used in combination with methods such as
-/// [`Bits::test_bit_in`].
+/// This can be used in combination with methods such as [`Bits::test_bit_in`].
 ///
-/// Shift-right indexing is constructed increasingly from left to right for
+/// Little-endian indexing is constructed increasingly from left to right for
 /// individual primitives, such as the following [`u8`] literal:
 ///
 /// ```text
@@ -149,9 +157,9 @@ impl Shift for Shl {
 ///
 /// [`Bits::test_bit_in`]: crate::Bits::test_bit_in
 #[non_exhaustive]
-pub struct Shr;
+pub struct LittleEndian;
 
-impl Shift for Shr {
+impl Endian for LittleEndian {
     #[inline]
     fn mask<T>(index: u32) -> T
     where
@@ -201,6 +209,5 @@ impl Shift for Shr {
     }
 }
 
-/// The default shift index in use.
-#[allow(clippy::module_name_repetitions)]
-pub type DefaultShift = Shl;
+/// The default endianness to use.
+pub type DefaultEndian = BigEndian;

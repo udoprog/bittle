@@ -25,11 +25,11 @@
 //! ## Guide
 //!
 //! A bit is always identified by a [`u32`] by its index, and the exact location
-//! for primitive numbers is defined by its shift indexing mode, which is
-//! shift-left indexing ([`Shl`]) by default.
+//! for a bit in a primitive numbers is defined by its endianness, which is
+//! [`BigEndian`] by default.
 //!
-//! Shift-left indexing is constructed increasingly from right to left for
-//! individual primitives, such as the following [`u8`] literal:
+//! [`BigEndian`] indexing grows from right to left, such as the following
+//! [`u8`] literal:
 //!
 //! ```text
 //! 0b0010_0010u8
@@ -144,15 +144,15 @@
 //!
 //! <br>
 //!
+//! [`BigEndian`]: https://docs.rs/bittle/latest/bittle/struct.BigEndian.html
 //! [`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
-//! [`Bits::test_bit_shr`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_shr
 //! [`Bits::test_bit_in`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_in
+//! [`Bits::test_bit_le`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_le
 //! [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
 //! [`BitsMut`]: https://docs.rs/bittle/latest/bittle/trait.BitsMut.html
 //! [`BitsOwned`]: https://docs.rs/bittle/latest/bittle/trait.BitsOwned.html
 //! [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 //! [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
-//! [`Shl`]: https://docs.rs/bittle/latest/bittle/struct.shl.html
 //! [`u32`]: https://doc.rust-lang.org/std/primitive.u32.html
 //! [see issue #2]: https://github.com/udoprog/bittle/pull/2
 
@@ -182,8 +182,8 @@ pub use self::bits_mut::BitsMut;
 mod bits_owned;
 pub use self::bits_owned::BitsOwned;
 
-mod shift;
-pub use self::shift::{DefaultShift, Shl, Shr};
+mod endian;
+pub use self::endian::{BigEndian, DefaultEndian, Endian, LittleEndian};
 
 pub mod prelude {
     //! Prelude use to conveniently import all relevant bits-oriented traits.

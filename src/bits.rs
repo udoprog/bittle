@@ -1,12 +1,12 @@
 //! Traits which define the behaviors of a bit set.
 
 mod join_ones;
-use crate::shift::{Shift, Shl, Shr};
+use crate::endian::{BigEndian, Endian, LittleEndian};
 
 pub use self::join_ones::JoinOnes;
 
 mod sealed {
-    use crate::shift::Shift;
+    use crate::endian::Endian;
 
     pub trait Sealed {}
 
@@ -14,10 +14,10 @@ mod sealed {
     impl<T> Sealed for &T where T: ?Sized + crate::Bits {}
     impl<T> Sealed for [T] {}
     impl<T, const N: usize> Sealed for [T; N] {}
-    impl<T, S> Sealed for crate::set::Set<T, S>
+    impl<T, E> Sealed for crate::set::Set<T, E>
     where
         T: ?Sized,
-        S: Shift,
+        E: Endian,
     {
     }
 }
@@ -56,39 +56,43 @@ pub(crate) use self::sealed::Sealed;
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 pub trait Bits: Sealed {
-    /// The iterator over zeros in this bit pattern using the default shift
-    /// ordering.
+    /// The iterator over zeros in this bit pattern using [`DefaultEndian`]
+    /// indexing.
     ///
     /// See [`Bits::iter_ones`].
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     type IterOnes<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
-    /// The iterator over ones in this bit pattern using a custom shift
-    /// ordering.
+    /// The iterator over ones in this bit pattern using custom [`Endian`]
+    /// indexing.
     ///
     /// See [`Bits::iter_ones_in`].
-    type IterOnesWith<'a, S>: Iterator<Item = u32>
+    type IterOnesIn<'a, E>: Iterator<Item = u32>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
-    /// The iterator over zeros in this bit pattern using the default shift
-    /// ordering.
+    /// The iterator over zeros in this bit pattern using [`DefaultEndian`]
+    /// indexing.
     ///
     /// See [`Bits::iter_zeros`].
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     type IterZeros<'a>: Iterator<Item = u32>
     where
         Self: 'a;
 
-    /// The iterator over zeros in this bit pattern using a custom shift
-    /// ordering.
+    /// The iterator over zeros in this bit pattern using custom [`Endian`]
+    /// indexing.
     ///
     /// See [`Bits::iter_zeros_in`].
-    type IterZerosWith<'a, S>: Iterator<Item = u32>
+    type IterZerosIn<'a, E>: Iterator<Item = u32>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
     /// Get the number of ones in the set.
     ///
@@ -202,42 +206,42 @@ pub trait Bits: Sealed {
     /// ```
     fn all_ones(&self) -> bool;
 
-    /// Test if the given bit is set using custom shift indexing.
+    /// Test if the given bit is set using custom [`Endian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let a: u32 = bittle::set_shr![];
-    /// assert!(!a.test_bit_in::<Shr>(32));
+    /// let a: u32 = bittle::set_le![];
+    /// assert!(!a.test_bit_in::<LittleEndian>(32));
     ///
-    /// let a: u32 = bittle::set_shr![32];
-    /// assert!(a.test_bit_in::<Shr>(32));
+    /// let a: u32 = bittle::set_le![32];
+    /// assert!(a.test_bit_in::<LittleEndian>(32));
     /// ```
     ///
     /// Using a larger set:
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let a: [u32; 2] = bittle::set_shr![];
-    /// assert!(!a.test_bit_in::<Shr>(55));
+    /// let a: [u32; 2] = bittle::set_le![];
+    /// assert!(!a.test_bit_in::<LittleEndian>(55));
     ///
-    /// let a: [u32; 2] = bittle::set_shr![55];
-    /// assert!(a.test_bit_in::<Shr>(55));
+    /// let a: [u32; 2] = bittle::set_le![55];
+    /// assert!(a.test_bit_in::<LittleEndian>(55));
     /// ```
-    fn test_bit_in<S>(&self, index: u32) -> bool
+    fn test_bit_in<E>(&self, index: u32) -> bool
     where
-        S: Shift;
+        E: Endian;
 
-    /// Test if the given bit is set using [`DefaultShift`].
+    /// Test if the given bit is set using [`DefaultEndian`].
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -262,12 +266,9 @@ pub trait Bits: Sealed {
     /// let a: [u32; 2] = bittle::set![55];
     /// assert!(a.test_bit(55));
     /// ```
-    #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        self.test_bit_in::<Shl>(index)
-    }
+    fn test_bit(&self, index: u32) -> bool;
 
-    /// Test if the given bit is set using [`Shr`] indexing.
+    /// Test if the given bit is set using [`LittleEndian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
@@ -276,11 +277,11 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let a: u32 = bittle::set_shr![];
-    /// assert!(!a.test_bit_shr(32));
+    /// let a: u32 = bittle::set_le![];
+    /// assert!(!a.test_bit_le(32));
     ///
-    /// let a: u32 = bittle::set_shr![32];
-    /// assert!(a.test_bit_shr(32));
+    /// let a: u32 = bittle::set_le![32];
+    /// assert!(a.test_bit_le(32));
     /// ```
     ///
     /// Using a larger set:
@@ -288,21 +289,55 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let a: [u32; 2] = bittle::set_shr![];
-    /// assert!(!a.test_bit_shr(55));
+    /// let a: [u32; 2] = bittle::set_le![];
+    /// assert!(!a.test_bit_le(55));
     ///
-    /// let a: [u32; 2] = bittle::set_shr![55];
-    /// assert!(a.test_bit_shr(55));
+    /// let a: [u32; 2] = bittle::set_le![55];
+    /// assert!(a.test_bit_le(55));
     /// ```
     #[inline]
-    fn test_bit_shr(&self, index: u32) -> bool {
-        self.test_bit_in::<Shr>(index)
+    fn test_bit_le(&self, index: u32) -> bool {
+        self.test_bit_in::<LittleEndian>(index)
     }
 
-    /// Construct an iterator over ones in the bit set using the default shift
+    /// Test if the given bit is set using [`BigEndian`] indexing.
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: u32 = bittle::set_be![];
+    /// assert!(!a.test_bit_be(32));
+    ///
+    /// let a: u32 = bittle::set_be![32];
+    /// assert!(a.test_bit_be(32));
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: [u32; 2] = bittle::set_be![];
+    /// assert!(!a.test_bit_be(55));
+    ///
+    /// let a: [u32; 2] = bittle::set_be![55];
+    /// assert!(a.test_bit_be(55));
+    /// ```
+    #[inline]
+    fn test_bit_be(&self, index: u32) -> bool {
+        self.test_bit_in::<BigEndian>(index)
+    }
+
+    /// Construct an iterator over ones in the bit set using [`DefaultEndian`]
     /// indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -330,25 +365,25 @@ pub trait Bits: Sealed {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let set: u128 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_ones_in::<Shr>().eq([3, 7]));
+    /// let set: u128 = bittle::set_le![3, 7];
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([3, 7]));
     /// ```
     ///
     /// A larger bit set:
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let set: [u32; 4] = bittle::set_shr![4, 67, 71];
-    /// assert!(set.iter_ones_in::<Shr>().eq([4, 67, 71]));
+    /// let set: [u32; 4] = bittle::set_le![4, 67, 71];
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([4, 67, 71]));
     /// ```
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
     where
-        S: Shift;
+        E: Endian;
 
-    /// Construct an iterator over ones in the bit set using shift-right
+    /// Construct an iterator over ones in the bit set using [`LittleEndian`]
     /// indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
@@ -358,8 +393,8 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let set: u128 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_ones_shr().eq([3, 7]));
+    /// let set: u128 = bittle::set_le![3, 7];
+    /// assert!(set.iter_ones_le().eq([3, 7]));
     /// ```
     ///
     /// A larger bit set:
@@ -367,18 +402,47 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let set: [u32; 4] = bittle::set_shr![4, 67, 71];
-    /// assert!(set.iter_ones_shr().eq([4, 67, 71]));
+    /// let set: [u32; 4] = bittle::set_le![4, 67, 71];
+    /// assert!(set.iter_ones_le().eq([4, 67, 71]));
     /// ```
     #[inline]
-    fn iter_ones_shr(&self) -> Self::IterOnesWith<'_, Shr> {
+    fn iter_ones_le(&self) -> Self::IterOnesIn<'_, LittleEndian> {
         self.iter_ones_in()
     }
 
-    /// Construct an iterator over zeros in the bit set using the default shift
+    /// Construct an iterator over ones in the bit set using [`BigEndian`]
     /// indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: u128 = bittle::set_be![3, 7];
+    /// assert!(set.iter_ones_be().eq([3, 7]));
+    /// ```
+    ///
+    /// A larger bit set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: [u32; 4] = bittle::set_be![4, 67, 71];
+    /// assert!(set.iter_ones_be().eq([4, 67, 71]));
+    /// ```
+    #[inline]
+    fn iter_ones_be(&self) -> Self::IterOnesIn<'_, BigEndian> {
+        self.iter_ones_in()
+    }
+
+    /// Construct an iterator over zeros in the bit set using [`DefaultEndian`]
+    /// indexing.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -406,25 +470,25 @@ pub trait Bits: Sealed {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let set: u8 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_zeros_in::<Shr>().eq([0, 1, 2, 4, 5, 6]));
+    /// let set: u8 = bittle::set_le![3, 7];
+    /// assert!(set.iter_zeros_in::<LittleEndian>().eq([0, 1, 2, 4, 5, 6]));
     /// ```
     ///
     /// A larger bit set:
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let set: [u8; 2] = bittle::set_shr![3, 7, 13, 14, 15];
-    /// assert!(set.iter_zeros_in::<Shr>().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// let set: [u8; 2] = bittle::set_le![3, 7, 13, 14, 15];
+    /// assert!(set.iter_zeros_in::<LittleEndian>().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
     /// ```
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
     where
-        S: Shift;
+        E: Endian;
 
-    /// Construct an iterator over zeros in the bit set using [`Shr`] indexing.
+    /// Construct an iterator over zeros in the bit set using [`LittleEndian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
@@ -433,8 +497,8 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let set: u8 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_zeros_shr().eq([0, 1, 2, 4, 5, 6]));
+    /// let set: u8 = bittle::set_le![3, 7];
+    /// assert!(set.iter_zeros_le().eq([0, 1, 2, 4, 5, 6]));
     /// ```
     ///
     /// A larger bit set:
@@ -442,16 +506,44 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let set: [u8; 2] = bittle::set_shr![3, 7, 13, 14, 15];
-    /// assert!(set.iter_zeros_shr().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// let set: [u8; 2] = bittle::set_le![3, 7, 13, 14, 15];
+    /// assert!(set.iter_zeros_le().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
     /// ```
     #[inline]
-    fn iter_zeros_shr(&self) -> Self::IterZerosWith<'_, Shr> {
+    fn iter_zeros_le(&self) -> Self::IterZerosIn<'_, LittleEndian> {
+        self.iter_zeros_in()
+    }
+
+    /// Construct an iterator over zeros in the bit set using [`BigEndian`]
+    /// indexing.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: u8 = bittle::set_be![3, 7];
+    /// assert!(set.iter_zeros_be().eq([0, 1, 2, 4, 5, 6]));
+    /// ```
+    ///
+    /// A larger bit set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: [u8; 2] = bittle::set_be![3, 7, 13, 14, 15];
+    /// assert!(set.iter_zeros_be().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// ```
+    #[inline]
+    fn iter_zeros_be(&self) -> Self::IterZerosIn<'_, BigEndian> {
         self.iter_zeros_in()
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using custom shift indexing.
+    /// yields the elements which are set to ones using custom [`Endian`]
+    /// indexing.
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
     /// appropriate.
@@ -459,33 +551,33 @@ pub trait Bits: Sealed {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let mask: u128 = bittle::set_shr![0, 1, 3];
+    /// let mask: u128 = bittle::set_le![0, 1, 3];
     /// let mut values = vec![false, false, false, false];
     ///
-    /// for value in mask.join_ones_in::<_, Shr>(values.iter_mut()) {
+    /// for value in mask.join_ones_in::<_, LittleEndian>(values.iter_mut()) {
     ///     *value = true;
     /// }
     ///
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
-    fn join_ones_in<I, S>(&self, iter: I) -> JoinOnes<Self::IterOnesWith<'_, S>, I::IntoIter>
+    fn join_ones_in<I, E>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, E>, I::IntoIter>
     where
         Self: Sized,
         I: IntoIterator,
-        S: Shift,
+        E: Endian,
     {
         JoinOnes::new(self.iter_ones_in(), iter.into_iter())
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using [`DefaultShift`].
+    /// yields the elements which are set to ones using [`DefaultEndian`].
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
     /// appropriate.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -511,7 +603,7 @@ pub trait Bits: Sealed {
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using [`Shr`] indexing.
+    /// yields the elements which are set to ones using [`LittleEndian`] indexing.
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
     /// appropriate.
@@ -519,19 +611,48 @@ pub trait Bits: Sealed {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, Shr};
+    /// use bittle::Bits;
     ///
-    /// let mask: u128 = bittle::set_shr![0, 1, 3];
+    /// let mask: u8 = 0b11010000;
     /// let mut values = vec![false, false, false, false];
     ///
-    /// for value in mask.join_ones_shr(values.iter_mut()) {
+    /// for value in mask.join_ones_le(values.iter_mut()) {
     ///     *value = true;
     /// }
     ///
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
     #[inline]
-    fn join_ones_shr<I>(&self, iter: I) -> JoinOnes<Self::IterOnesWith<'_, Shr>, I::IntoIter>
+    fn join_ones_le<I>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, LittleEndian>, I::IntoIter>
+    where
+        Self: Sized,
+        I: IntoIterator,
+    {
+        self.join_ones_in(iter)
+    }
+
+    /// Join this bit set with an iterator, creating an iterator that only
+    /// yields the elements which are set to ones using [`BigEndian`] indexing.
+    ///
+    /// The underlying iterator is advanced using [`Iterator::nth`] as
+    /// appropriate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mask: u8 = 0b00001011;
+    /// let mut values = vec![false, false, false, false];
+    ///
+    /// for value in mask.join_ones_be(values.iter_mut()) {
+    ///     *value = true;
+    /// }
+    ///
+    /// assert_eq!(values, vec![true, true, false, true]);
+    /// ```
+    #[inline]
+    fn join_ones_be<I>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, BigEndian>, I::IntoIter>
     where
         Self: Sized,
         I: IntoIterator,
@@ -548,19 +669,19 @@ where
     where
         Self: 'a;
 
-    type IterOnesWith<'a, S> = T::IterOnesWith<'a, S>
+    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
     type IterZeros<'a> = T::IterZeros<'a>
     where
         Self: 'a;
 
-    type IterZerosWith<'a, S> = T::IterZerosWith<'a, S>
+    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
     where
         Self: 'a,
-        S: Shift;
+        E: Endian;
 
     #[inline]
     fn count_ones(&self) -> u32 {
@@ -588,93 +709,11 @@ where
     }
 
     #[inline]
-    fn test_bit_in<S>(&self, index: u32) -> bool
+    fn test_bit_in<E>(&self, index: u32) -> bool
     where
-        S: Shift,
+        E: Endian,
     {
-        (**self).test_bit_in::<S>(index)
-    }
-
-    #[inline]
-    fn iter_ones(&self) -> Self::IterOnes<'_> {
-        (**self).iter_ones()
-    }
-
-    #[inline]
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
-    where
-        S: Shift,
-    {
-        (**self).iter_ones_in()
-    }
-
-    #[inline]
-    fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        (**self).iter_zeros()
-    }
-
-    #[inline]
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
-    where
-        S: Shift,
-    {
-        (**self).iter_zeros_in()
-    }
-}
-
-impl<T> Bits for &mut T
-where
-    T: ?Sized + Bits,
-{
-    type IterOnesWith<'a, S> = T::IterOnesWith<'a, S>
-    where
-        Self: 'a,
-        S: Shift;
-
-    type IterOnes<'a> = T::IterOnes<'a>
-    where
-        Self: 'a;
-
-    type IterZerosWith<'a, S> = T::IterZerosWith<'a, S>
-    where
-        Self: 'a,
-        S: Shift;
-
-    type IterZeros<'a> = T::IterZeros<'a>
-    where
-        Self: 'a;
-
-    #[inline]
-    fn count_ones(&self) -> u32 {
-        (**self).count_ones()
-    }
-
-    #[inline]
-    fn count_zeros(&self) -> u32 {
-        (**self).count_zeros()
-    }
-
-    #[inline]
-    fn bits_capacity(&self) -> u32 {
-        (**self).bits_capacity()
-    }
-
-    #[inline]
-    fn all_zeros(&self) -> bool {
-        (**self).all_zeros()
-    }
-
-    #[inline]
-    fn all_ones(&self) -> bool {
-        (**self).all_ones()
-    }
-
-    #[inline]
-    fn test_bit_in<S>(&self, index: u32) -> bool
-    where
-        S: Shift,
-    {
-        (**self).test_bit_in::<S>(index)
+        (**self).test_bit_in::<E>(index)
     }
 
     #[inline]
@@ -688,9 +727,9 @@ where
     }
 
     #[inline]
-    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
     {
         (**self).iter_ones_in()
     }
@@ -701,9 +740,96 @@ where
     }
 
     #[inline]
-    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
     where
-        S: Shift,
+        E: Endian,
+    {
+        (**self).iter_zeros_in()
+    }
+}
+
+impl<T> Bits for &mut T
+where
+    T: ?Sized + Bits,
+{
+    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
+    where
+        Self: 'a,
+        E: Endian;
+
+    type IterOnes<'a> = T::IterOnes<'a>
+    where
+        Self: 'a;
+
+    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
+    where
+        Self: 'a,
+        E: Endian;
+
+    type IterZeros<'a> = T::IterZeros<'a>
+    where
+        Self: 'a;
+
+    #[inline]
+    fn count_ones(&self) -> u32 {
+        (**self).count_ones()
+    }
+
+    #[inline]
+    fn count_zeros(&self) -> u32 {
+        (**self).count_zeros()
+    }
+
+    #[inline]
+    fn bits_capacity(&self) -> u32 {
+        (**self).bits_capacity()
+    }
+
+    #[inline]
+    fn all_zeros(&self) -> bool {
+        (**self).all_zeros()
+    }
+
+    #[inline]
+    fn all_ones(&self) -> bool {
+        (**self).all_ones()
+    }
+
+    #[inline]
+    fn test_bit_in<E>(&self, index: u32) -> bool
+    where
+        E: Endian,
+    {
+        (**self).test_bit_in::<E>(index)
+    }
+
+    #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        (**self).test_bit(index)
+    }
+
+    #[inline]
+    fn iter_ones(&self) -> Self::IterOnes<'_> {
+        (**self).iter_ones()
+    }
+
+    #[inline]
+    fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
+    where
+        E: Endian,
+    {
+        (**self).iter_ones_in()
+    }
+
+    #[inline]
+    fn iter_zeros(&self) -> Self::IterZeros<'_> {
+        (**self).iter_zeros()
+    }
+
+    #[inline]
+    fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
+    where
+        E: Endian,
     {
         (**self).iter_zeros_in()
     }

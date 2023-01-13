@@ -5,10 +5,10 @@ use core::marker::PhantomData;
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
-use crate::shift::{DefaultShift, Shift};
+use crate::endian::{DefaultEndian, Endian};
 
 mod sealed {
-    use crate::shift::Shift;
+    use crate::endian::Endian;
 
     /// Basic numerical trait for the plumbing of a bit set. This ensures that only
     /// primitive types can be used as the basis of a bit set backed by an array,
@@ -21,14 +21,14 @@ mod sealed {
         fn count_zeros(self) -> u32;
 
         /// Set reverse bit.
-        fn set_bit_rev<S>(&mut self, index: u32)
+        fn set_bit_rev<E>(&mut self, index: u32)
         where
-            S: Shift;
+            E: Endian;
 
         /// Clear reverse bit.
-        fn clear_bit_rev<S>(&mut self, index: u32)
+        fn clear_bit_rev<E>(&mut self, index: u32)
         where
-            S: Shift;
+            E: Endian;
 
         /// Generate an overflowing mask for the given index.
         fn mask(index: u32) -> Self;
@@ -67,19 +67,19 @@ macro_rules! number {
             }
 
             #[inline]
-            fn set_bit_rev<S>(&mut self, index: u32)
+            fn set_bit_rev<E>(&mut self, index: u32)
             where
-                S: Shift,
+                E: Endian,
             {
-                *self |= S::mask_rev::<Self>(index);
+                *self |= E::mask_rev::<Self>(index);
             }
 
             #[inline]
-            fn clear_bit_rev<S>(&mut self, index: u32)
+            fn clear_bit_rev<E>(&mut self, index: u32)
             where
-                S: Shift,
+                E: Endian,
             {
-                *self &= !S::mask_rev::<Self>(index);
+                *self &= !E::mask_rev::<Self>(index);
             }
 
             #[inline]
@@ -118,10 +118,10 @@ macro_rules! number {
         impl crate::bits::Sealed for $ty {}
 
         impl Bits for $ty {
-            type IterOnes<'a> = IterOnes<Self, DefaultShift> where Self: 'a;
-            type IterOnesWith<'a, S> = IterOnes<Self, S> where Self: 'a, S: Shift;
-            type IterZeros<'a> = IterZeros<Self, DefaultShift> where Self: 'a;
-            type IterZerosWith<'a, S> = IterZeros<Self, S> where Self: 'a, S: Shift;
+            type IterOnes<'a> = IterOnes<Self, DefaultEndian> where Self: 'a;
+            type IterOnesIn<'a, E> = IterOnes<Self, E> where Self: 'a, E: Endian;
+            type IterZeros<'a> = IterZeros<Self, DefaultEndian> where Self: 'a;
+            type IterZerosIn<'a, E> = IterZeros<Self, E> where Self: 'a, E: Endian;
 
             #[inline]
             fn count_ones(&self) -> u32 {
@@ -149,11 +149,16 @@ macro_rules! number {
             }
 
             #[inline]
-            fn test_bit_in<S>(&self, index: u32) -> bool
+            fn test_bit_in<E>(&self, index: u32) -> bool
             where
-                S: Shift,
+                E: Endian,
             {
-                *self & S::mask::<Self>(index) != 0
+                *self & E::mask::<Self>(index) != 0
+            }
+
+            #[inline]
+            fn test_bit(&self, index: u32) -> bool {
+                self.test_bit_in::<DefaultEndian>(index)
             }
 
             #[inline]
@@ -162,9 +167,9 @@ macro_rules! number {
             }
 
             #[inline]
-            fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
+            fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
             where
-                S: Shift,
+                E: Endian,
             {
                 IterOnes::new(*self)
             }
@@ -175,9 +180,9 @@ macro_rules! number {
             }
 
             #[inline]
-            fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
+            fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
             where
-                S: Shift,
+                E: Endian,
             {
                 IterZeros::new(*self)
             }
@@ -185,19 +190,29 @@ macro_rules! number {
 
         impl BitsMut for $ty {
             #[inline]
-            fn set_bit_in<S>(&mut self, index: u32)
+            fn set_bit_in<E>(&mut self, index: u32)
             where
-                S: Shift,
+                E: Endian,
             {
-                *self |= S::mask::<Self>(index);
+                *self |= E::mask::<Self>(index);
             }
 
             #[inline]
-            fn clear_bit_in<S>(&mut self, index: u32)
+            fn set_bit(&mut self, index: u32) {
+                self.set_bit_in::<DefaultEndian>(index);
+            }
+
+            #[inline]
+            fn clear_bit_in<E>(&mut self, index: u32)
             where
-                S: Shift,
+                E: Endian,
             {
-                *self &= !S::mask::<Self>(index);
+                *self &= !E::mask::<Self>(index);
+            }
+
+            #[inline]
+            fn clear_bit(&mut self, index: u32) {
+                self.clear_bit_in::<DefaultEndian>(index);
             }
 
             #[inline]
@@ -231,10 +246,10 @@ macro_rules! number {
             const ZEROS: Self = 0;
             const ONES: Self = !0;
 
-            type IntoIterOnes = IterOnes<Self, DefaultShift>;
-            type IntoIterOnesWith<S> = IterOnes<Self, S> where S: Shift;
-            type IntoIterZeros = IterZeros<Self, DefaultShift>;
-            type IntoIterZerosWith<S> = IterZeros<Self, S> where S: Shift;
+            type IntoIterOnes = IterOnes<Self, DefaultEndian>;
+            type IntoIterOnesIn<E> = IterOnes<Self, E> where E: Endian;
+            type IntoIterZeros = IterZeros<Self, DefaultEndian>;
+            type IntoIterZerosIn<E> = IterZeros<Self, E> where E: Endian;
 
             #[inline]
             fn zeros() -> Self {
@@ -247,19 +262,29 @@ macro_rules! number {
             }
 
             #[inline]
-            fn with_bit_in<S>(self, bit: u32) -> Self
-            where
-                S: Shift,
-            {
-                self | S::mask::<Self>(bit)
+            fn with_bit(self, bit: u32) -> Self {
+                self.with_bit_in::<DefaultEndian>(bit)
             }
 
             #[inline]
-            fn without_bit_in<S>(self, bit: u32) -> Self
+            fn with_bit_in<E>(self, bit: u32) -> Self
             where
-                S: Shift,
+                E: Endian,
             {
-                self & !S::mask::<Self>(bit)
+                self | E::mask::<Self>(bit)
+            }
+
+            #[inline]
+            fn without_bit(self, bit: u32) -> Self {
+                self.without_bit_in::<DefaultEndian>(bit)
+            }
+
+            #[inline]
+            fn without_bit_in<E>(self, bit: u32) -> Self
+            where
+                E: Endian,
+            {
+                self & !E::mask::<Self>(bit)
             }
 
             #[inline]
@@ -288,9 +313,9 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
+            fn into_iter_ones_in<E>(self) -> Self::IntoIterOnesIn<E>
             where
-                S: Shift,
+                E: Endian,
             {
                 IterOnes::new(self)
             }
@@ -301,9 +326,9 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
+            fn into_iter_zeros_in<E>(self) -> Self::IntoIterZerosIn<E>
             where
-                S: Shift,
+                E: Endian,
             {
                 IterZeros::new(self)
             }
@@ -327,12 +352,12 @@ number!(i128);
 /// An iterator over ones in a primitive number.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct IterOnes<T, S> {
+pub struct IterOnes<T, E> {
     bits: T,
-    _shift: PhantomData<S>,
+    _shift: PhantomData<E>,
 }
 
-impl<T, S> IterOnes<T, S> {
+impl<T, E> IterOnes<T, E> {
     #[inline]
     const fn new(bits: T) -> Self {
         Self {
@@ -342,10 +367,10 @@ impl<T, S> IterOnes<T, S> {
     }
 }
 
-impl<T, S> Iterator for IterOnes<T, S>
+impl<T, E> Iterator for IterOnes<T, E>
 where
     T: BitsOwned + Number,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 
@@ -355,8 +380,8 @@ where
             return None;
         }
 
-        let index = S::zeros(self.bits);
-        self.bits.clear_bit_in::<S>(index);
+        let index = E::zeros(self.bits);
+        self.bits.clear_bit_in::<E>(index);
         Some(index)
     }
 }
@@ -370,10 +395,10 @@ where
 /// let n: u8 = bittle::set![0, 4];
 /// assert!(n.iter_ones().rev().eq([4, 0]));
 /// ```
-impl<T, S> DoubleEndedIterator for IterOnes<T, S>
+impl<T, E> DoubleEndedIterator for IterOnes<T, E>
 where
     T: BitsOwned + Number,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -381,16 +406,16 @@ where
             return None;
         }
 
-        let index = S::zeros_rev(self.bits);
-        self.bits.clear_bit_rev::<S>(index);
+        let index = E::zeros_rev(self.bits);
+        self.bits.clear_bit_rev::<E>(index);
         Some(T::BITS - index - 1)
     }
 }
 
-impl<T, S> ExactSizeIterator for IterOnes<T, S>
+impl<T, E> ExactSizeIterator for IterOnes<T, E>
 where
     T: BitsOwned + Number,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -401,12 +426,12 @@ where
 /// An iterator over zeros in a primitive number.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct IterZeros<T, S> {
+pub struct IterZeros<T, E> {
     bits: T,
-    _shift: PhantomData<S>,
+    _shift: PhantomData<E>,
 }
 
-impl<T, S> IterZeros<T, S> {
+impl<T, E> IterZeros<T, E> {
     #[inline]
     const fn new(bits: T) -> Self {
         Self {
@@ -416,10 +441,10 @@ impl<T, S> IterZeros<T, S> {
     }
 }
 
-impl<T, S> Iterator for IterZeros<T, S>
+impl<T, E> Iterator for IterZeros<T, E>
 where
     T: BitsMut + Number,
-    S: Shift,
+    E: Endian,
 {
     type Item = u32;
 
@@ -429,16 +454,16 @@ where
             return None;
         }
 
-        let index = S::ones(self.bits);
-        self.bits.set_bit_in::<S>(index);
+        let index = E::ones(self.bits);
+        self.bits.set_bit_in::<E>(index);
         Some(index)
     }
 }
 
-impl<T, S> ExactSizeIterator for IterZeros<T, S>
+impl<T, E> ExactSizeIterator for IterZeros<T, E>
 where
     T: BitsMut + Number,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn len(&self) -> usize {
@@ -455,10 +480,10 @@ where
 /// let n: u8 = bittle::set![0, 4];
 /// assert!(n.iter_zeros().rev().eq([7, 6, 5, 3, 2, 1]));
 /// ```
-impl<T, S> DoubleEndedIterator for IterZeros<T, S>
+impl<T, E> DoubleEndedIterator for IterZeros<T, E>
 where
     T: BitsOwned + Number,
-    S: Shift,
+    E: Endian,
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -466,8 +491,8 @@ where
             return None;
         }
 
-        let index = S::ones_rev(self.bits);
-        self.bits.set_bit_rev::<S>(index);
+        let index = E::ones_rev(self.bits);
+        self.bits.set_bit_rev::<E>(index);
         Some(T::BITS - index - 1)
     }
 }

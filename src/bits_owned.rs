@@ -1,5 +1,5 @@
 use crate::bits_mut::BitsMut;
-use crate::shift::{Shift, Shl, Shr};
+use crate::endian::{BigEndian, Endian, LittleEndian};
 
 /// Bitset owned operations.
 ///
@@ -82,33 +82,33 @@ pub trait BitsOwned: BitsMut {
     /// ```
     const ONES: Self;
 
-    /// Owning iterator over bits set to ones using [`DefaultShift`] indexing.
+    /// Owning iterator over bits set to ones using [`DefaultEndian`] indexing.
     ///
     /// See [`BitsOwned::into_iter_ones`].
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     type IntoIterOnes: Iterator<Item = u32>;
 
-    /// Owning iterator over bits set to ones using custom shift indexing.
+    /// Owning iterator over bits set to ones using custom [`Endian`] indexing.
     ///
     /// See [`BitsOwned::into_iter_ones_in`].
-    type IntoIterOnesWith<S>: Iterator<Item = u32>
+    type IntoIterOnesIn<E>: Iterator<Item = u32>
     where
-        S: Shift;
+        E: Endian;
 
-    /// Owning iterator over bits set to zero using the [`DefaultShift`] ordering.
+    /// Owning iterator over bits set to zero using the [`DefaultEndian`] ordering.
     ///
     /// See [`BitsOwned::into_iter_zeros`].
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     type IntoIterZeros: Iterator<Item = u32>;
 
-    /// Owning iterator over bits set to zero using custom shift ordering.
+    /// Owning iterator over bits set to zero using custom [`Endian`] ordering.
     ///
     /// See [`BitsOwned::into_iter_zeros_in`].
-    type IntoIterZerosWith<S>: Iterator<Item = u32>
+    type IntoIterZerosIn<E>: Iterator<Item = u32>
     where
-        S: Shift;
+        E: Endian;
 
     /// Construct a bit set of all zeros, or one that is empty.
     ///
@@ -141,29 +141,29 @@ pub trait BitsOwned: BitsMut {
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let set = u128::zeros().with_bit_in::<Shr>(8).with_bit_in::<Shr>(12);
-    /// assert!(set.iter_ones_in::<Shr>().eq([8, 12]))
+    /// let set = u128::zeros().with_bit_in::<LittleEndian>(8).with_bit_in::<LittleEndian>(12);
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([8, 12]))
     /// ```
     ///
     /// Using a larger set:
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let set = <[u32; 4]>::zeros().with_bit_in::<Shr>(8).with_bit_in::<Shr>(12);
-    /// assert!(set.iter_ones_in::<Shr>().eq([8, 12]))
+    /// let set = <[u32; 4]>::zeros().with_bit_in::<LittleEndian>(8).with_bit_in::<LittleEndian>(12);
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([8, 12]))
     /// ```
     #[must_use]
-    fn with_bit_in<S>(self, bit: u32) -> Self
+    fn with_bit_in<E>(self, bit: u32) -> Self
     where
-        S: Shift;
+        E: Endian;
 
-    /// Set the given bit and return the modified set with the [`DefaultShift`]
+    /// Set the given bit and return the modified set with the [`DefaultEndian`]
     /// indexing.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -183,23 +183,17 @@ pub trait BitsOwned: BitsMut {
     /// assert!(set.iter_ones().eq([8, 12]))
     /// ```
     #[must_use]
-    #[inline]
-    fn with_bit(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
-        self.with_bit_in::<Shl>(bit)
-    }
+    fn with_bit(self, bit: u32) -> Self;
 
-    /// Set the given bit and return the modified set with the [`Shr`] indexing.
+    /// Set the given bit and return the modified set with the [`LittleEndian`] indexing.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = u128::zeros().with_bit_shr(8).with_bit_shr(12);
-    /// assert!(set.iter_ones_shr().eq([8, 12]))
+    /// let set = u128::zeros().with_bit_le(8).with_bit_le(12);
+    /// assert!(set.iter_ones_le().eq([8, 12]))
     /// ```
     ///
     /// Using a larger set:
@@ -207,47 +201,76 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = <[u32; 4]>::zeros().with_bit_shr(8).with_bit_shr(12);
-    /// assert!(set.iter_ones_shr().eq([8, 12]))
+    /// let set = <[u32; 4]>::zeros().with_bit_le(8).with_bit_le(12);
+    /// assert!(set.iter_ones_le().eq([8, 12]))
     /// ```
     #[must_use]
     #[inline]
-    fn with_bit_shr(self, bit: u32) -> Self
+    fn with_bit_le(self, bit: u32) -> Self
     where
         Self: Sized,
     {
-        self.with_bit_in::<Shr>(bit)
+        self.with_bit_in::<LittleEndian>(bit)
     }
 
-    /// Set the given bit and return the modified set using custom shift
+    /// Set the given bit and return the modified set with the [`BigEndian`]
     /// indexing.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = u8::ones().without_bit_in::<Shr>(2);
-    /// assert!(set.iter_ones_in::<Shr>().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// let set = u128::zeros().with_bit_be(8).with_bit_be(12);
+    /// assert!(set.iter_ones_be().eq([8, 12]))
     /// ```
     ///
     /// Using a larger set:
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = <[u8; 2]>::ones().without_bit_in::<Shr>(2).without_bit_in::<Shr>(10);
-    /// assert!(set.iter_ones_in::<Shr>().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// let set = <[u32; 4]>::zeros().with_bit_be(8).with_bit_be(12);
+    /// assert!(set.iter_ones_be().eq([8, 12]))
     /// ```
     #[must_use]
-    fn without_bit_in<S>(self, bit: u32) -> Self
+    #[inline]
+    fn with_bit_be(self, bit: u32) -> Self
     where
-        S: Shift;
+        Self: Sized,
+    {
+        self.with_bit_in::<BigEndian>(bit)
+    }
 
-    /// Set the given bit and return the modified set using [`DefaultShift`]
+    /// Set the given bit and return the modified set using custom [`Endian`]
     /// indexing.
     ///
-    /// [`DefaultShift`]: crate::DefaultShift
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
+    ///
+    /// let set = u8::ones().without_bit_in::<LittleEndian>(2);
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
+    ///
+    /// let set = <[u8; 2]>::ones().without_bit_in::<LittleEndian>(2).without_bit_in::<LittleEndian>(10);
+    /// assert!(set.iter_ones_in::<LittleEndian>().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// ```
+    #[must_use]
+    fn without_bit_in<E>(self, bit: u32) -> Self
+    where
+        E: Endian;
+
+    /// Set the given bit and return the modified set using [`DefaultEndian`]
+    /// indexing.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -267,15 +290,9 @@ pub trait BitsOwned: BitsMut {
     /// assert!(set.iter_ones().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
     /// ```
     #[must_use]
-    #[inline]
-    fn without_bit(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
-        self.without_bit_in::<Shl>(bit)
-    }
+    fn without_bit(self, bit: u32) -> Self;
 
-    /// Set the given bit and return the modified set using [`Shr`]
+    /// Set the given bit and return the modified set using [`LittleEndian`]
     /// indexing.
     ///
     /// # Examples
@@ -283,8 +300,8 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = u8::ones().without_bit_shr(2);
-    /// assert!(set.iter_ones_shr().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// let set = u8::ones().without_bit_le(2);
+    /// assert!(set.iter_ones_le().eq([0, 1, 3, 4, 5, 6, 7]))
     /// ```
     ///
     /// Using a larger set:
@@ -292,16 +309,45 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let set = <[u8; 2]>::ones().without_bit_shr(2).without_bit_shr(10);
-    /// assert!(set.iter_ones_shr().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// let set = <[u8; 2]>::ones().without_bit_le(2).without_bit_le(10);
+    /// assert!(set.iter_ones_le().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
     /// ```
     #[must_use]
     #[inline]
-    fn without_bit_shr(self, bit: u32) -> Self
+    fn without_bit_le(self, bit: u32) -> Self
     where
         Self: Sized,
     {
-        self.without_bit_in::<Shr>(bit)
+        self.without_bit_in::<LittleEndian>(bit)
+    }
+
+    /// Set the given bit and return the modified set using [`BigEndian`]
+    /// indexing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let set = u8::ones().without_bit_be(2);
+    /// assert!(set.iter_ones_be().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let set = <[u8; 2]>::ones().without_bit_be(2).without_bit_be(10);
+    /// assert!(set.iter_ones_be().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// ```
+    #[must_use]
+    #[inline]
+    fn without_bit_be(self, bit: u32) -> Self
+    where
+        Self: Sized,
+    {
+        self.without_bit_in::<BigEndian>(bit)
     }
 
     /// Construct the union between this and another set.
@@ -434,10 +480,12 @@ pub trait BitsOwned: BitsMut {
     #[must_use]
     fn symmetric_difference(self, other: Self) -> Self;
 
-    /// Construct an owning iterator over all ones in a set using the default
-    /// shift indexing.
+    /// Construct an owning iterator over all ones in a set using the
+    /// [`DefaultEndian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -458,34 +506,34 @@ pub trait BitsOwned: BitsMut {
     /// ```
     fn into_iter_ones(self) -> Self::IntoIterOnes;
 
-    /// Construct an owning iterator over all ones in a set using custom shift
-    /// indexing.
+    /// Construct an owning iterator over all ones in a set using custom
+    /// [`Endian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let a: u128 = bittle::set_shr![3, 7];
-    /// assert!(a.into_iter_ones_in::<Shr>().eq([3, 7]));
+    /// let a: u128 = bittle::set_le![3, 7];
+    /// assert!(a.into_iter_ones_in::<LittleEndian>().eq([3, 7]));
     /// ```
     ///
     /// Using a larger set:
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let a: [u32; 4] = bittle::set_shr![4, 63, 71];
-    /// assert!(a.into_iter_ones_in::<Shr>().eq([4, 63, 71]));
+    /// let a: [u32; 4] = bittle::set_le![4, 63, 71];
+    /// assert!(a.into_iter_ones_in::<LittleEndian>().eq([4, 63, 71]));
     /// ```
-    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<E>(self) -> Self::IntoIterOnesIn<E>
     where
-        S: Shift;
+        E: Endian;
 
-    /// Construct an owning iterator over all ones in a set using shift-right
-    /// indexing.
+    /// Construct an owning iterator over all ones in a set using
+    /// [`LittleEndian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
@@ -494,8 +542,8 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let a: u128 = bittle::set_shr![3, 7];
-    /// assert!(a.into_iter_ones_shr().eq([3, 7]));
+    /// let a: u128 = bittle::set_le![3, 7];
+    /// assert!(a.into_iter_ones_le().eq([3, 7]));
     /// ```
     ///
     /// Using a larger set:
@@ -503,21 +551,53 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let a: [u32; 4] = bittle::set_shr![4, 63, 71];
-    /// assert!(a.into_iter_ones_shr().eq([4, 63, 71]));
+    /// let a: [u32; 4] = bittle::set_le![4, 63, 71];
+    /// assert!(a.into_iter_ones_le().eq([4, 63, 71]));
     /// ```
     #[inline]
-    fn into_iter_ones_shr(self) -> Self::IntoIterOnesWith<Shr>
+    fn into_iter_ones_le(self) -> Self::IntoIterOnesIn<LittleEndian>
     where
         Self: Sized,
     {
         self.into_iter_ones_in()
     }
 
-    /// Construct an owning iterator over all zeros in a set using the default
-    /// shift indexing.
+    /// Construct an owning iterator over all ones in a set using [`BigEndian`]
+    /// indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: u128 = bittle::set![3, 7];
+    /// assert!(a.into_iter_ones_be().eq([3, 7]));
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: [u32; 4] = bittle::set![4, 63, 71];
+    /// assert!(a.into_iter_ones_be().eq([4, 63, 71]));
+    /// ```
+    #[inline]
+    fn into_iter_ones_be(self) -> Self::IntoIterOnesIn<BigEndian>
+    where
+        Self: Sized,
+    {
+        self.into_iter_ones_in()
+    }
+
+    /// Construct an owning iterator over all zeros in a set using
+    /// [`DefaultEndian`] indexing.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
     ///
     /// # Examples
     ///
@@ -538,34 +618,34 @@ pub trait BitsOwned: BitsMut {
     /// ```
     fn into_iter_zeros(self) -> Self::IntoIterZeros;
 
-    /// Construct an owning iterator over all zeros in a set using custom shift
-    /// indexing.
+    /// Construct an owning iterator over all zeros in a set using custom
+    /// [`Endian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let a: u16 = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_in::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// let a: u16 = bittle::set_le![4, 7, 10];
+    /// assert!(a.into_iter_zeros_in::<LittleEndian>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     ///
     /// Using a larger set:
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned, Shr};
+    /// use bittle::{Bits, BitsOwned, LittleEndian};
     ///
-    /// let a: [u8; 2] = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_in::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// let a: [u8; 2] = bittle::set_le![4, 7, 10];
+    /// assert!(a.into_iter_zeros_in::<LittleEndian>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
-    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<E>(self) -> Self::IntoIterZerosIn<E>
     where
-        S: Shift;
+        E: Endian;
 
-    /// Construct an owning iterator over all zeros in a set using shift-right
-    /// indexing.
+    /// Construct an owning iterator over all zeros in a set using
+    /// [`LittleEndian`] indexing.
     ///
     /// Will iterate through elements from smallest to largest index.
     ///
@@ -574,8 +654,8 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let a: u16 = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_shr().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// let a: u16 = bittle::set_le![4, 7, 10];
+    /// assert!(a.into_iter_zeros_le().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     ///
     /// Using a larger set:
@@ -583,11 +663,41 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let a: [u8; 2] = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_shr().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// let a: [u8; 2] = bittle::set_le![4, 7, 10];
+    /// assert!(a.into_iter_zeros_le().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     #[inline]
-    fn into_iter_zeros_shr(self) -> Self::IntoIterZerosWith<Shr>
+    fn into_iter_zeros_le(self) -> Self::IntoIterZerosIn<LittleEndian>
+    where
+        Self: Sized,
+    {
+        self.into_iter_zeros_in()
+    }
+
+    /// Construct an owning iterator over all zeros in a set using [`BigEndian`]
+    /// indexing.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: u16 = bittle::set![4, 7, 10];
+    /// assert!(a.into_iter_zeros_be().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a: [u8; 2] = bittle::set![4, 7, 10];
+    /// assert!(a.into_iter_zeros_be().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// ```
+    #[inline]
+    fn into_iter_zeros_be(self) -> Self::IntoIterZerosIn<BigEndian>
     where
         Self: Sized,
     {
