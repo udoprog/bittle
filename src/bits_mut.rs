@@ -35,7 +35,7 @@ pub trait BitsMut: Bits {
     /// Set the given bit.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
-    fn set_bit_with<S>(&mut self, index: u32)
+    fn set_bit_in<S>(&mut self, index: u32)
     where
         S: Shift;
 
@@ -83,7 +83,7 @@ pub trait BitsMut: Bits {
     /// ```
     #[inline]
     fn set_bit(&mut self, index: u32) {
-        self.set_bit_with::<Shl>(index);
+        self.set_bit_in::<Shl>(index);
     }
 
     /// Set the given bit using [`Shr`] indexing.
@@ -128,13 +128,13 @@ pub trait BitsMut: Bits {
     /// ```
     #[inline]
     fn set_bit_shr(&mut self, index: u32) {
-        self.set_bit_with::<Shr>(index);
+        self.set_bit_in::<Shr>(index);
     }
 
     /// Clear the given bit with a custom shift ordering.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
-    fn clear_bit_with<S>(&mut self, index: u32)
+    fn clear_bit_in<S>(&mut self, index: u32)
     where
         S: Shift;
 
@@ -182,7 +182,7 @@ pub trait BitsMut: Bits {
     /// ```
     #[inline]
     fn clear_bit(&mut self, index: u32) {
-        self.clear_bit_with::<Shl>(index);
+        self.clear_bit_in::<Shl>(index);
     }
 
     /// Clear the given bit using [`Shr`] indexing.
@@ -227,7 +227,7 @@ pub trait BitsMut: Bits {
     /// ```
     #[inline]
     fn clear_bit_shr(&mut self, index: u32) {
-        self.clear_bit_with::<Shr>(index);
+        self.clear_bit_in::<Shr>(index);
     }
 
     /// Clear the entire bit pattern.
@@ -415,11 +415,11 @@ where
     T: ?Sized + BitsMut,
 {
     #[inline]
-    fn set_bit_with<S>(&mut self, index: u32)
+    fn set_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        (**self).set_bit_with::<S>(index);
+        (**self).set_bit_in::<S>(index);
     }
 
     #[inline]
@@ -428,11 +428,11 @@ where
     }
 
     #[inline]
-    fn clear_bit_with<S>(&mut self, index: u32)
+    fn clear_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        (**self).clear_bit_with::<S>(index);
+        (**self).clear_bit_in::<S>(index);
     }
 
     #[inline]

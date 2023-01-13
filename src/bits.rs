@@ -67,7 +67,7 @@ pub trait Bits: Sealed {
     /// The iterator over ones in this bit pattern using a custom shift
     /// ordering.
     ///
-    /// See [`Bits::iter_ones_with`].
+    /// See [`Bits::iter_ones_in`].
     type IterOnesWith<'a, S>: Iterator<Item = u32>
     where
         Self: 'a,
@@ -84,7 +84,7 @@ pub trait Bits: Sealed {
     /// The iterator over zeros in this bit pattern using a custom shift
     /// ordering.
     ///
-    /// See [`Bits::iter_zeros_with`].
+    /// See [`Bits::iter_zeros_in`].
     type IterZerosWith<'a, S>: Iterator<Item = u32>
     where
         Self: 'a,
@@ -212,10 +212,10 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let a: u32 = bittle::set_shr![];
-    /// assert!(!a.test_bit_with::<Shr>(32));
+    /// assert!(!a.test_bit_in::<Shr>(32));
     ///
     /// let a: u32 = bittle::set_shr![32];
-    /// assert!(a.test_bit_with::<Shr>(32));
+    /// assert!(a.test_bit_in::<Shr>(32));
     /// ```
     ///
     /// Using a larger set:
@@ -224,12 +224,12 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let a: [u32; 2] = bittle::set_shr![];
-    /// assert!(!a.test_bit_with::<Shr>(55));
+    /// assert!(!a.test_bit_in::<Shr>(55));
     ///
     /// let a: [u32; 2] = bittle::set_shr![55];
-    /// assert!(a.test_bit_with::<Shr>(55));
+    /// assert!(a.test_bit_in::<Shr>(55));
     /// ```
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift;
 
@@ -264,7 +264,7 @@ pub trait Bits: Sealed {
     /// ```
     #[inline]
     fn test_bit(&self, index: u32) -> bool {
-        self.test_bit_with::<Shl>(index)
+        self.test_bit_in::<Shl>(index)
     }
 
     /// Test if the given bit is set using [`Shr`] indexing.
@@ -296,7 +296,7 @@ pub trait Bits: Sealed {
     /// ```
     #[inline]
     fn test_bit_shr(&self, index: u32) -> bool {
-        self.test_bit_with::<Shr>(index)
+        self.test_bit_in::<Shr>(index)
     }
 
     /// Construct an iterator over ones in the bit set using the default shift
@@ -333,7 +333,7 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let set: u128 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_ones_with::<Shr>().eq([3, 7]));
+    /// assert!(set.iter_ones_in::<Shr>().eq([3, 7]));
     /// ```
     ///
     /// A larger bit set:
@@ -342,9 +342,9 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let set: [u32; 4] = bittle::set_shr![4, 67, 71];
-    /// assert!(set.iter_ones_with::<Shr>().eq([4, 67, 71]));
+    /// assert!(set.iter_ones_in::<Shr>().eq([4, 67, 71]));
     /// ```
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift;
 
@@ -372,7 +372,7 @@ pub trait Bits: Sealed {
     /// ```
     #[inline]
     fn iter_ones_shr(&self) -> Self::IterOnesWith<'_, Shr> {
-        self.iter_ones_with()
+        self.iter_ones_in()
     }
 
     /// Construct an iterator over zeros in the bit set using the default shift
@@ -409,7 +409,7 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let set: u8 = bittle::set_shr![3, 7];
-    /// assert!(set.iter_zeros_with::<Shr>().eq([0, 1, 2, 4, 5, 6]));
+    /// assert!(set.iter_zeros_in::<Shr>().eq([0, 1, 2, 4, 5, 6]));
     /// ```
     ///
     /// A larger bit set:
@@ -418,9 +418,9 @@ pub trait Bits: Sealed {
     /// use bittle::{Bits, Shr};
     ///
     /// let set: [u8; 2] = bittle::set_shr![3, 7, 13, 14, 15];
-    /// assert!(set.iter_zeros_with::<Shr>().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// assert!(set.iter_zeros_in::<Shr>().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
     /// ```
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift;
 
@@ -447,7 +447,36 @@ pub trait Bits: Sealed {
     /// ```
     #[inline]
     fn iter_zeros_shr(&self) -> Self::IterZerosWith<'_, Shr> {
-        self.iter_zeros_with()
+        self.iter_zeros_in()
+    }
+
+    /// Join this bit set with an iterator, creating an iterator that only
+    /// yields the elements which are set to ones using custom shift indexing.
+    ///
+    /// The underlying iterator is advanced using [`Iterator::nth`] as
+    /// appropriate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, Shr};
+    ///
+    /// let mask: u128 = bittle::set_shr![0, 1, 3];
+    /// let mut values = vec![false, false, false, false];
+    ///
+    /// for value in mask.join_ones_in::<_, Shr>(values.iter_mut()) {
+    ///     *value = true;
+    /// }
+    ///
+    /// assert_eq!(values, vec![true, true, false, true]);
+    /// ```
+    fn join_ones_in<I, S>(&self, iter: I) -> JoinOnes<Self::IterOnesWith<'_, S>, I::IntoIter>
+    where
+        Self: Sized,
+        I: IntoIterator,
+        S: Shift,
+    {
+        JoinOnes::new(self.iter_ones_in(), iter.into_iter())
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
@@ -482,35 +511,6 @@ pub trait Bits: Sealed {
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using custom shift indexing.
-    ///
-    /// The underlying iterator is advanced using [`Iterator::nth`] as
-    /// appropriate.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::{Bits, Shr};
-    ///
-    /// let mask: u128 = bittle::set_shr![0, 1, 3];
-    /// let mut values = vec![false, false, false, false];
-    ///
-    /// for value in mask.join_ones_with::<_, Shr>(values.iter_mut()) {
-    ///     *value = true;
-    /// }
-    ///
-    /// assert_eq!(values, vec![true, true, false, true]);
-    /// ```
-    fn join_ones_with<I, S>(&self, iter: I) -> JoinOnes<Self::IterOnesWith<'_, S>, I::IntoIter>
-    where
-        Self: Sized,
-        I: IntoIterator,
-        S: Shift,
-    {
-        JoinOnes::new(self.iter_ones_with(), iter.into_iter())
-    }
-
-    /// Join this bit set with an iterator, creating an iterator that only
     /// yields the elements which are set to ones using [`Shr`] indexing.
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
@@ -536,7 +536,7 @@ pub trait Bits: Sealed {
         Self: Sized,
         I: IntoIterator,
     {
-        self.join_ones_with(iter)
+        self.join_ones_in(iter)
     }
 }
 
@@ -588,11 +588,11 @@ where
     }
 
     #[inline]
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift,
     {
-        (**self).test_bit_with::<S>(index)
+        (**self).test_bit_in::<S>(index)
     }
 
     #[inline]
@@ -601,11 +601,11 @@ where
     }
 
     #[inline]
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift,
     {
-        (**self).iter_ones_with()
+        (**self).iter_ones_in()
     }
 
     #[inline]
@@ -614,11 +614,11 @@ where
     }
 
     #[inline]
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift,
     {
-        (**self).iter_zeros_with()
+        (**self).iter_zeros_in()
     }
 }
 
@@ -670,11 +670,11 @@ where
     }
 
     #[inline]
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift,
     {
-        (**self).test_bit_with::<S>(index)
+        (**self).test_bit_in::<S>(index)
     }
 
     #[inline]
@@ -688,11 +688,11 @@ where
     }
 
     #[inline]
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift,
     {
-        (**self).iter_ones_with()
+        (**self).iter_ones_in()
     }
 
     #[inline]
@@ -701,10 +701,10 @@ where
     }
 
     #[inline]
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift,
     {
-        (**self).iter_zeros_with()
+        (**self).iter_zeros_in()
     }
 }

@@ -146,7 +146,7 @@
 //!
 //! [`Bits::join_ones`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.join_ones
 //! [`Bits::test_bit_shr`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_shr
-//! [`Bits::test_bit_with`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_with
+//! [`Bits::test_bit_in`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html#method.test_bit_in
 //! [`Bits`]: https://docs.rs/bittle/latest/bittle/trait.Bits.html
 //! [`BitsMut`]: https://docs.rs/bittle/latest/bittle/trait.BitsMut.html
 //! [`BitsOwned`]: https://docs.rs/bittle/latest/bittle/trait.BitsOwned.html

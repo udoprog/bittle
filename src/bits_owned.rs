@@ -91,7 +91,7 @@ pub trait BitsOwned: BitsMut {
 
     /// Owning iterator over bits set to ones using custom shift indexing.
     ///
-    /// See [`BitsOwned::into_iter_ones_with`].
+    /// See [`BitsOwned::into_iter_ones_in`].
     type IntoIterOnesWith<S>: Iterator<Item = u32>
     where
         S: Shift;
@@ -105,7 +105,7 @@ pub trait BitsOwned: BitsMut {
 
     /// Owning iterator over bits set to zero using custom shift ordering.
     ///
-    /// See [`BitsOwned::into_iter_zeros_with`].
+    /// See [`BitsOwned::into_iter_zeros_in`].
     type IntoIterZerosWith<S>: Iterator<Item = u32>
     where
         S: Shift;
@@ -143,8 +143,8 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
-    /// let set = u128::zeros().with_bit_with::<Shr>(8).with_bit_with::<Shr>(12);
-    /// assert!(set.iter_ones_with::<Shr>().eq([8, 12]))
+    /// let set = u128::zeros().with_bit_in::<Shr>(8).with_bit_in::<Shr>(12);
+    /// assert!(set.iter_ones_in::<Shr>().eq([8, 12]))
     /// ```
     ///
     /// Using a larger set:
@@ -152,11 +152,11 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
-    /// let set = <[u32; 4]>::zeros().with_bit_with::<Shr>(8).with_bit_with::<Shr>(12);
-    /// assert!(set.iter_ones_with::<Shr>().eq([8, 12]))
+    /// let set = <[u32; 4]>::zeros().with_bit_in::<Shr>(8).with_bit_in::<Shr>(12);
+    /// assert!(set.iter_ones_in::<Shr>().eq([8, 12]))
     /// ```
     #[must_use]
-    fn with_bit_with<S>(self, bit: u32) -> Self
+    fn with_bit_in<S>(self, bit: u32) -> Self
     where
         S: Shift;
 
@@ -188,7 +188,7 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.with_bit_with::<Shl>(bit)
+        self.with_bit_in::<Shl>(bit)
     }
 
     /// Set the given bit and return the modified set with the [`Shr`] indexing.
@@ -216,7 +216,7 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.with_bit_with::<Shr>(bit)
+        self.with_bit_in::<Shr>(bit)
     }
 
     /// Set the given bit and return the modified set using custom shift
@@ -227,8 +227,8 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
-    /// let set = u8::ones().without_bit_with::<Shr>(2);
-    /// assert!(set.iter_ones_with::<Shr>().eq([0, 1, 3, 4, 5, 6, 7]))
+    /// let set = u8::ones().without_bit_in::<Shr>(2);
+    /// assert!(set.iter_ones_in::<Shr>().eq([0, 1, 3, 4, 5, 6, 7]))
     /// ```
     ///
     /// Using a larger set:
@@ -236,11 +236,11 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
-    /// let set = <[u8; 2]>::ones().without_bit_with::<Shr>(2).without_bit_with::<Shr>(10);
-    /// assert!(set.iter_ones_with::<Shr>().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
+    /// let set = <[u8; 2]>::ones().without_bit_in::<Shr>(2).without_bit_in::<Shr>(10);
+    /// assert!(set.iter_ones_in::<Shr>().eq([0, 1, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15]))
     /// ```
     #[must_use]
-    fn without_bit_with<S>(self, bit: u32) -> Self
+    fn without_bit_in<S>(self, bit: u32) -> Self
     where
         S: Shift;
 
@@ -272,7 +272,7 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.without_bit_with::<Shl>(bit)
+        self.without_bit_in::<Shl>(bit)
     }
 
     /// Set the given bit and return the modified set using [`Shr`]
@@ -301,7 +301,7 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.without_bit_with::<Shr>(bit)
+        self.without_bit_in::<Shr>(bit)
     }
 
     /// Construct the union between this and another set.
@@ -469,7 +469,7 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
     /// let a: u128 = bittle::set_shr![3, 7];
-    /// assert!(a.into_iter_ones_with::<Shr>().eq([3, 7]));
+    /// assert!(a.into_iter_ones_in::<Shr>().eq([3, 7]));
     /// ```
     ///
     /// Using a larger set:
@@ -478,9 +478,9 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
     /// let a: [u32; 4] = bittle::set_shr![4, 63, 71];
-    /// assert!(a.into_iter_ones_with::<Shr>().eq([4, 63, 71]));
+    /// assert!(a.into_iter_ones_in::<Shr>().eq([4, 63, 71]));
     /// ```
-    fn into_iter_ones_with<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
     where
         S: Shift;
 
@@ -511,7 +511,7 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.into_iter_ones_with()
+        self.into_iter_ones_in()
     }
 
     /// Construct an owning iterator over all zeros in a set using the default
@@ -549,7 +549,7 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
     /// let a: u16 = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_with::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// assert!(a.into_iter_zeros_in::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     ///
     /// Using a larger set:
@@ -558,9 +558,9 @@ pub trait BitsOwned: BitsMut {
     /// use bittle::{Bits, BitsOwned, Shr};
     ///
     /// let a: [u8; 2] = bittle::set_shr![4, 7, 10];
-    /// assert!(a.into_iter_zeros_with::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// assert!(a.into_iter_zeros_in::<Shr>().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
-    fn into_iter_zeros_with<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
     where
         S: Shift;
 
@@ -591,6 +591,6 @@ pub trait BitsOwned: BitsMut {
     where
         Self: Sized,
     {
-        self.into_iter_zeros_with()
+        self.into_iter_zeros_in()
     }
 }

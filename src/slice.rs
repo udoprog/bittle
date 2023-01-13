@@ -117,11 +117,11 @@ where
     /// assert!(a.test_bit(4));
     /// ```
     #[inline]
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift,
     {
-        self[((index / T::BITS) as usize % self.len())].test_bit_with::<S>(index % T::BITS)
+        self[((index / T::BITS) as usize % self.len())].test_bit_in::<S>(index % T::BITS)
     }
 
     /// Iterates over all ones in the slice using the default shift ordering.
@@ -152,7 +152,7 @@ where
     /// assert!(a.iter_ones().eq([4, 11, 14]));
     /// ```
     #[inline]
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift,
     {
@@ -187,7 +187,7 @@ where
     /// assert!(a.iter_zeros().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
     /// ```
     #[inline]
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift,
     {
@@ -212,11 +212,11 @@ where
     /// assert!(a.iter_ones().eq([7, 13]));
     /// ```
     #[inline]
-    fn set_bit_with<S>(&mut self, index: u32)
+    fn set_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self[((index / T::BITS) as usize % self.len())].set_bit_with::<S>(index % T::BITS);
+        self[((index / T::BITS) as usize % self.len())].set_bit_in::<S>(index % T::BITS);
     }
 
     /// Set the given bit is set in the slice.
@@ -232,11 +232,11 @@ where
     /// assert!(a.iter_ones().eq([7]));
     /// ```
     #[inline]
-    fn clear_bit_with<S>(&mut self, index: u32)
+    fn clear_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self[((index / T::BITS) as usize % self.len())].clear_bit_with::<S>(index % T::BITS);
+        self[((index / T::BITS) as usize % self.len())].clear_bit_in::<S>(index % T::BITS);
     }
 
     /// Clear the entire slice, or set all bits to zeros.
@@ -306,7 +306,7 @@ where
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
+        let current = iter.next().map(|v| (v.into_iter_ones_in(), 0));
         Self { iter, current }
     }
 }
@@ -330,7 +330,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_ones_with(),
+                self.iter.next()?.into_iter_ones_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }
@@ -356,7 +356,7 @@ where
     #[inline]
     pub(crate) fn new(slice: &'a [T]) -> Self {
         let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
+        let current = iter.next().map(|v| (v.into_iter_zeros_in(), 0));
         Self { iter, current }
     }
 }
@@ -380,7 +380,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_zeros_with(),
+                self.iter.next()?.into_iter_zeros_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }

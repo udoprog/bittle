@@ -36,7 +36,7 @@ macro_rules! set {
 macro_rules! set_shr {
     ($($index:expr),* $(,)?) => {{
         let mut set = $crate::BitsOwned::ZEROS;
-        $($crate::BitsMut::set_bit_with::<$crate::Shr>(&mut set, $index);)*
+        $($crate::BitsMut::set_bit_shr(&mut set, $index);)*
         set
     }};
 }

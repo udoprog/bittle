@@ -149,7 +149,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn test_bit_with<S>(&self, index: u32) -> bool
+            fn test_bit_in<S>(&self, index: u32) -> bool
             where
                 S: Shift,
             {
@@ -162,7 +162,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+            fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
             where
                 S: Shift,
             {
@@ -175,7 +175,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+            fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
             where
                 S: Shift,
             {
@@ -185,7 +185,7 @@ macro_rules! number {
 
         impl BitsMut for $ty {
             #[inline]
-            fn set_bit_with<S>(&mut self, index: u32)
+            fn set_bit_in<S>(&mut self, index: u32)
             where
                 S: Shift,
             {
@@ -193,7 +193,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn clear_bit_with<S>(&mut self, index: u32)
+            fn clear_bit_in<S>(&mut self, index: u32)
             where
                 S: Shift,
             {
@@ -247,7 +247,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn with_bit_with<S>(self, bit: u32) -> Self
+            fn with_bit_in<S>(self, bit: u32) -> Self
             where
                 S: Shift,
             {
@@ -255,7 +255,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn without_bit_with<S>(self, bit: u32) -> Self
+            fn without_bit_in<S>(self, bit: u32) -> Self
             where
                 S: Shift,
             {
@@ -288,7 +288,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_iter_ones_with<S>(self) -> Self::IntoIterOnesWith<S>
+            fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
             where
                 S: Shift,
             {
@@ -301,7 +301,7 @@ macro_rules! number {
             }
 
             #[inline]
-            fn into_iter_zeros_with<S>(self) -> Self::IntoIterZerosWith<S>
+            fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
             where
                 S: Shift,
             {
@@ -329,7 +329,7 @@ number!(i128);
 #[repr(transparent)]
 pub struct IterOnes<T, S> {
     bits: T,
-    shift: PhantomData<S>,
+    _shift: PhantomData<S>,
 }
 
 impl<T, S> IterOnes<T, S> {
@@ -337,7 +337,7 @@ impl<T, S> IterOnes<T, S> {
     const fn new(bits: T) -> Self {
         Self {
             bits,
-            shift: PhantomData,
+            _shift: PhantomData,
         }
     }
 }
@@ -356,7 +356,7 @@ where
         }
 
         let index = S::zeros(self.bits);
-        self.bits.clear_bit_with::<S>(index);
+        self.bits.clear_bit_in::<S>(index);
         Some(index)
     }
 }
@@ -403,7 +403,7 @@ where
 #[repr(transparent)]
 pub struct IterZeros<T, S> {
     bits: T,
-    shift: PhantomData<S>,
+    _shift: PhantomData<S>,
 }
 
 impl<T, S> IterZeros<T, S> {
@@ -411,7 +411,7 @@ impl<T, S> IterZeros<T, S> {
     const fn new(bits: T) -> Self {
         Self {
             bits,
-            shift: PhantomData,
+            _shift: PhantomData,
         }
     }
 }
@@ -430,7 +430,7 @@ where
         }
 
         let index = S::ones(self.bits);
-        self.bits.set_bit_with::<S>(index);
+        self.bits.set_bit_in::<S>(index);
         Some(index)
     }
 }

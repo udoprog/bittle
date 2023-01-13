@@ -7,8 +7,7 @@ use core::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
 use crate::bits::Bits;
 use crate::bits_mut::BitsMut;
 use crate::bits_owned::BitsOwned;
-use crate::shift::DefaultShift;
-use crate::shift::Shift;
+use crate::shift::{DefaultShift, Shift, Shr};
 
 /// Convenience wrapper around bitsets providing the wrapped type with behaviors
 /// you'd expected out of a set-like container.
@@ -52,7 +51,7 @@ use crate::shift::Shift;
 /// let set: u128 = bittle::set_shr![1, 14];
 /// assert_eq!(format!("{set:?}"), "85080976323951685521100712850600493056");
 ///
-/// let set: Set<u128, Shr> = Set::new_with(set);
+/// let set: Set<u128, Shr> = Set::new_shr(set);
 /// assert_eq!(format!("{set:?}"), "{1, 14}");
 /// ```
 ///
@@ -201,7 +200,7 @@ pub struct Set<T, S = DefaultShift>
 where
     T: ?Sized,
 {
-    shift: PhantomData<S>,
+    _shift: PhantomData<S>,
     bits: T,
 }
 
@@ -220,30 +219,60 @@ impl<T> Set<T> {
     /// ```
     #[inline]
     pub const fn new(bits: T) -> Self {
-        Self::new_with(bits)
+        Self::new_in(bits)
     }
 }
 
-impl<T, S> Set<T, S> {
-    /// Construct a set from its underlying bits using a custom shift ordering.
+impl<T> Set<T, Shr> {
+    /// Construct a set from its underlying bits using [`Shr`] indexing.
     ///
     /// # Examples
     ///
     /// ```
     /// use bittle::{Bits, Set};
     ///
-    /// let mut set = Set::new(0b00001001u32);
-    /// assert!(set.iter_ones().eq([0, 3]));
+    /// let mut set = Set::new_shr(0b00001001u8);
+    /// assert!(set.iter_ones().eq([4, 7]));
     /// ```
     #[inline]
-    pub const fn new_with(bits: T) -> Self {
+    pub const fn new_shr(bits: T) -> Self {
+        Self::new_in(bits)
+    }
+}
+
+impl<T, S> Set<T, S> {
+    /// Construct a set from its underlying bits using custom shift indexing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, Set, Shr};
+    ///
+    /// let mut set: Set<u8, Shr> = Set::new_in(0b00001001u8);
+    /// assert!(set.iter_ones().eq([4, 7]));
+    /// assert!(set.iter_ones_in::<Shr>().eq([4, 7]));
+    /// ```
+    #[inline]
+    pub const fn new_in(bits: T) -> Self {
         Self {
-            shift: PhantomData,
+            _shift: PhantomData,
             bits,
         }
     }
 
     /// Coerce into raw interior bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, Set};
+    ///
+    /// let mut set = Set::new(0b00001001u8);
+    /// assert_eq!(set.into_bits(), 0b00001001u8);
+    ///
+    /// let mut set = Set::new_shr(0b00001001u8);
+    /// assert_eq!(set.into_bits(), 0b00001001u8);
+    /// ```
     #[inline]
     pub fn into_bits(self) -> T {
         self.bits
@@ -254,7 +283,7 @@ impl<T> Set<T>
 where
     T: ?Sized,
 {
-    /// Wrap a reference as a set.
+    /// Wrap a reference as a set using [`DefaultShift`] indexing.
     ///
     /// # Examples
     ///
@@ -274,7 +303,7 @@ where
         unsafe { &*(bits.as_ref() as *const _ as *const _) }
     }
 
-    /// Wrap a mutable reference as a set.
+    /// Wrap a mutable reference as a set using [`DefaultShift`] indexing.
     ///
     /// # Examples
     ///
@@ -291,6 +320,56 @@ where
     /// ```
     #[inline]
     pub fn from_mut<U>(bits: &mut U) -> &mut Self
+    where
+        U: ?Sized + AsMut<T>,
+    {
+        // SAFETY: Reference provided as bits has the same memory layout as &mut
+        // Set<T>.
+        unsafe { &mut *(bits.as_mut() as *mut _ as *mut _) }
+    }
+}
+
+impl<T> Set<T, Shr>
+where
+    T: ?Sized,
+{
+    /// Wrap a reference as a set using [`Shr`] indexing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, Set};
+    ///
+    /// let mut set = Set::from_ref_shr(&[0b00000001u8, 0b00010000u8]);
+    /// assert!(set.iter_ones_shr().eq([7, 11]));
+    /// ```
+    #[inline]
+    pub fn from_ref_shr<U>(bits: &U) -> &Self
+    where
+        U: ?Sized + AsRef<T>,
+    {
+        // SAFETY: Reference provided as bits has the same memory layout as
+        // &Set<T>.
+        unsafe { &*(bits.as_ref() as *const _ as *const _) }
+    }
+
+    /// Wrap a mutable reference as a set using [`Shr`] indexing.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, Set, Shr};
+    ///
+    /// let mut values = [0b00000001u8, 0b00010000u8];
+    ///
+    /// let mut set = Set::from_mut_shr(&mut values);
+    /// assert!(set.iter_ones_shr().eq([7, 11]));
+    ///
+    /// set.set_bit(4);
+    /// assert_eq!(&values[..], &[0b00001001u8, 0b00010000u8]);
+    /// ```
+    #[inline]
+    pub fn from_mut_shr<U>(bits: &mut U) -> &mut Self
     where
         U: ?Sized + AsMut<T>,
     {
@@ -320,7 +399,7 @@ where
     /// ```
     #[inline]
     fn default() -> Self {
-        Self::new_with(T::ZEROS)
+        Self::new_in(T::ZEROS)
     }
 }
 
@@ -373,42 +452,42 @@ where
     }
 
     #[inline]
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift,
     {
-        self.bits.test_bit_with::<S>(index)
+        self.bits.test_bit_in::<S>(index)
     }
 
     #[inline]
     fn test_bit(&self, index: u32) -> bool {
-        self.bits.test_bit_with::<U>(index)
+        self.bits.test_bit_in::<U>(index)
     }
 
     #[inline]
     fn iter_ones(&self) -> Self::IterOnes<'_> {
-        self.bits.iter_ones_with()
+        self.bits.iter_ones_in()
     }
 
     #[inline]
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift,
     {
-        self.bits.iter_ones_with()
+        self.bits.iter_ones_in()
     }
 
     #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        self.bits.iter_zeros_with()
+        self.bits.iter_zeros_in()
     }
 
     #[inline]
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift,
     {
-        self.bits.iter_zeros_with()
+        self.bits.iter_zeros_in()
     }
 }
 
@@ -418,29 +497,29 @@ where
     U: Shift,
 {
     #[inline]
-    fn set_bit_with<S>(&mut self, index: u32)
+    fn set_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self.bits.set_bit_with::<S>(index);
+        self.bits.set_bit_in::<S>(index);
     }
 
     #[inline]
     fn set_bit(&mut self, index: u32) {
-        self.bits.set_bit_with::<U>(index);
+        self.bits.set_bit_in::<U>(index);
     }
 
     #[inline]
-    fn clear_bit_with<S>(&mut self, index: u32)
+    fn clear_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self.bits.clear_bit_with::<S>(index);
+        self.bits.clear_bit_in::<S>(index);
     }
 
     #[inline]
     fn clear_bit(&mut self, index: u32) {
-        self.bits.clear_bit_with::<U>(index);
+        self.bits.clear_bit_in::<U>(index);
     }
 
     #[inline]
@@ -475,8 +554,8 @@ where
     U: Shift,
 {
     const BITS: u32 = T::BITS;
-    const ONES: Self = Self::new_with(T::ONES);
-    const ZEROS: Self = Self::new_with(T::ZEROS);
+    const ONES: Self = Self::new_in(T::ONES);
+    const ZEROS: Self = Self::new_in(T::ZEROS);
 
     type IntoIterOnes = T::IntoIterOnesWith<U>;
     type IntoIterOnesWith<S> = T::IntoIterOnesWith<S> where S: Shift;
@@ -485,74 +564,74 @@ where
 
     #[inline]
     fn zeros() -> Self {
-        Self::new_with(T::ZEROS)
+        Self::new_in(T::ZEROS)
     }
 
     #[inline]
     fn ones() -> Self {
-        Self::new_with(T::ONES)
+        Self::new_in(T::ONES)
     }
 
     #[inline]
-    fn with_bit_with<S>(self, bit: u32) -> Self
+    fn with_bit_in<S>(self, bit: u32) -> Self
     where
         S: Shift,
     {
-        Self::new_with(self.bits.with_bit_with::<S>(bit))
+        Self::new_in(self.bits.with_bit_in::<S>(bit))
     }
 
     #[inline]
-    fn without_bit_with<S>(self, bit: u32) -> Self
+    fn without_bit_in<S>(self, bit: u32) -> Self
     where
         S: Shift,
     {
-        Self::new_with(self.bits.without_bit_with::<S>(bit))
+        Self::new_in(self.bits.without_bit_in::<S>(bit))
     }
 
     #[inline]
     fn union(self, other: Self) -> Self {
-        Self::new_with(self.bits.union(other.bits))
+        Self::new_in(self.bits.union(other.bits))
     }
 
     #[inline]
     fn conjunction(self, other: Self) -> Self {
-        Self::new_with(self.bits.conjunction(other.bits))
+        Self::new_in(self.bits.conjunction(other.bits))
     }
 
     #[inline]
     fn difference(self, other: Self) -> Self {
-        Self::new_with(self.bits.difference(other.bits))
+        Self::new_in(self.bits.difference(other.bits))
     }
 
     #[inline]
     fn symmetric_difference(self, other: Self) -> Self {
-        Self::new_with(self.bits.symmetric_difference(other.bits))
+        Self::new_in(self.bits.symmetric_difference(other.bits))
     }
 
     #[inline]
     fn into_iter_ones(self) -> Self::IntoIterOnes {
-        self.bits.into_iter_ones_with()
+        self.bits.into_iter_ones_in()
     }
 
     #[inline]
-    fn into_iter_ones_with<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
     where
         S: Shift,
     {
-        self.bits.into_iter_ones_with()
+        self.bits.into_iter_ones_in()
     }
 
     #[inline]
     fn into_iter_zeros(self) -> Self::IntoIterZeros {
-        self.bits.into_iter_zeros_with()
+        self.bits.into_iter_zeros_in()
     }
 
     #[inline]
-    fn into_iter_zeros_with<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
     where
         S: Shift,
     {
-        self.bits.into_iter_zeros_with()
+        self.bits.into_iter_zeros_in()
     }
 }
 
@@ -562,7 +641,7 @@ where
 {
     #[inline]
     fn clone(&self) -> Self {
-        Self::new_with(self.bits.clone())
+        Self::new_in(self.bits.clone())
     }
 }
 
@@ -575,7 +654,7 @@ where
 {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_set().entries(self.iter_ones_with::<S>()).finish()
+        f.debug_set().entries(self.iter_ones_in::<S>()).finish()
     }
 }
 
@@ -601,7 +680,7 @@ where
 {
     #[inline]
     fn eq(&self, other: &U) -> bool {
-        self.iter_ones_with::<S>().eq(other.iter_ones_with::<S>())
+        self.iter_ones_in::<S>().eq(other.iter_ones_in::<S>())
     }
 }
 
@@ -620,8 +699,8 @@ where
 {
     #[inline]
     fn partial_cmp(&self, other: &U) -> Option<cmp::Ordering> {
-        self.iter_ones_with::<S>()
-            .partial_cmp(other.iter_ones_with::<S>())
+        self.iter_ones_in::<S>()
+            .partial_cmp(other.iter_ones_in::<S>())
     }
 }
 
@@ -632,7 +711,7 @@ where
 {
     #[inline]
     fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.iter_ones_with::<S>().cmp(other.iter_ones_with::<S>())
+        self.iter_ones_in::<S>().cmp(other.iter_ones_in::<S>())
     }
 }
 
@@ -656,7 +735,7 @@ where
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.bits.into_iter_ones_with()
+        self.bits.into_iter_ones_in()
     }
 }
 
@@ -670,7 +749,7 @@ where
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        self.iter_ones_with::<S>()
+        self.iter_ones_in::<S>()
     }
 }
 
@@ -681,7 +760,7 @@ where
 {
     #[inline]
     fn from(bits: T) -> Self {
-        Self::new_with(bits)
+        Self::new_in(bits)
     }
 }
 
@@ -696,7 +775,7 @@ macro_rules! owned_ops {
 
             #[inline]
             fn $n(self, rhs: $name<$t, $s>) -> Self::Output {
-                $name::new_with(self.bits.$fn(rhs.bits))
+                $name::new_in(self.bits.$fn(rhs.bits))
             }
         }
 
@@ -709,7 +788,7 @@ macro_rules! owned_ops {
 
             #[inline]
             fn $n(self, rhs: &$name<$t, $s>) -> Self::Output {
-                $name::new_with(self.bits.$fn(rhs.bits))
+                $name::new_in(self.bits.$fn(rhs.bits))
             }
         }
 
@@ -722,7 +801,7 @@ macro_rules! owned_ops {
 
             #[inline]
             fn $n(self, rhs: $name<$t, $s>) -> Self::Output {
-                $name::new_with(self.bits.$fn(rhs.bits))
+                $name::new_in(self.bits.$fn(rhs.bits))
             }
         }
 
@@ -735,7 +814,7 @@ macro_rules! owned_ops {
 
             #[inline]
             fn $n(self, rhs: &$name<$t, $s>) -> Self::Output {
-                $name::new_with(self.bits.$fn(rhs.bits))
+                $name::new_in(self.bits.$fn(rhs.bits))
             }
         }
     };

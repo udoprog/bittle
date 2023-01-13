@@ -45,7 +45,7 @@ pub trait Shift: 'static + self::sealed::Sealed {
 /// Shift-left indexing for bit sets.
 ///
 /// This can be used in combination with methods such as
-/// [`Bits::test_bit_with`].
+/// [`Bits::test_bit_in`].
 ///
 /// Shift-left indexing is constructed increasingly from right to left for
 /// individual primitives, such as the following [`u8`] literal:
@@ -68,7 +68,7 @@ pub trait Shift: 'static + self::sealed::Sealed {
 ///      '-------------- index 5
 /// ```
 ///
-/// [`Bits::test_bit_with`]: crate::Bits::test_bit_with
+/// [`Bits::test_bit_in`]: crate::Bits::test_bit_in
 #[non_exhaustive]
 pub struct Shl;
 
@@ -125,7 +125,7 @@ impl Shift for Shl {
 /// Shift-right indexing for bit sets.
 ///
 /// This can be used in combination with methods such as
-/// [`Bits::test_bit_with`].
+/// [`Bits::test_bit_in`].
 ///
 /// Shift-right indexing is constructed increasingly from left to right for
 /// individual primitives, such as the following [`u8`] literal:
@@ -147,7 +147,7 @@ impl Shift for Shl {
 ///      '-------------- index 2
 /// ```
 ///
-/// [`Bits::test_bit_with`]: crate::Bits::test_bit_with
+/// [`Bits::test_bit_in`]: crate::Bits::test_bit_in
 #[non_exhaustive]
 pub struct Shr;
 

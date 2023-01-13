@@ -34,20 +34,20 @@ where
     }
 
     #[inline]
-    fn with_bit_with<S>(mut self, bit: u32) -> Self
+    fn with_bit_in<S>(mut self, bit: u32) -> Self
     where
         S: Shift,
     {
-        self[(bit / T::BITS) as usize % N].set_bit_with::<S>(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].set_bit_in::<S>(bit % T::BITS);
         self
     }
 
     #[inline]
-    fn without_bit_with<S>(mut self, bit: u32) -> Self
+    fn without_bit_in<S>(mut self, bit: u32) -> Self
     where
         S: Shift,
     {
-        self[(bit / T::BITS) as usize % N].clear_bit_with::<S>(bit % T::BITS);
+        self[(bit / T::BITS) as usize % N].clear_bit_in::<S>(bit % T::BITS);
         self
     }
 
@@ -93,7 +93,7 @@ where
     }
 
     #[inline]
-    fn into_iter_ones_with<S>(self) -> Self::IntoIterOnesWith<S>
+    fn into_iter_ones_in<S>(self) -> Self::IntoIterOnesWith<S>
     where
         S: Shift,
     {
@@ -106,7 +106,7 @@ where
     }
 
     #[inline]
-    fn into_iter_zeros_with<S>(self) -> Self::IntoIterZerosWith<S>
+    fn into_iter_zeros_in<S>(self) -> Self::IntoIterZerosWith<S>
     where
         S: Shift,
     {
@@ -149,11 +149,11 @@ where
     }
 
     #[inline]
-    fn test_bit_with<S>(&self, index: u32) -> bool
+    fn test_bit_in<S>(&self, index: u32) -> bool
     where
         S: Shift,
     {
-        self[(index / T::BITS) as usize % N].test_bit_with::<S>(index % T::BITS)
+        self[(index / T::BITS) as usize % N].test_bit_in::<S>(index % T::BITS)
     }
 
     #[inline]
@@ -162,7 +162,7 @@ where
     }
 
     #[inline]
-    fn iter_ones_with<S>(&self) -> Self::IterOnesWith<'_, S>
+    fn iter_ones_in<S>(&self) -> Self::IterOnesWith<'_, S>
     where
         S: Shift,
     {
@@ -175,7 +175,7 @@ where
     }
 
     #[inline]
-    fn iter_zeros_with<S>(&self) -> Self::IterZerosWith<'_, S>
+    fn iter_zeros_in<S>(&self) -> Self::IterZerosWith<'_, S>
     where
         S: Shift,
     {
@@ -188,19 +188,19 @@ where
     T: Copy + Eq + BitsOwned,
 {
     #[inline]
-    fn set_bit_with<S>(&mut self, index: u32)
+    fn set_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self[(index / T::BITS) as usize % N].set_bit_with::<S>(index % T::BITS);
+        self[(index / T::BITS) as usize % N].set_bit_in::<S>(index % T::BITS);
     }
 
     #[inline]
-    fn clear_bit_with<S>(&mut self, index: u32)
+    fn clear_bit_in<S>(&mut self, index: u32)
     where
         S: Shift,
     {
-        self[(index / T::BITS) as usize % N].clear_bit_with::<S>(index % T::BITS);
+        self[(index / T::BITS) as usize % N].clear_bit_in::<S>(index % T::BITS);
     }
 
     #[inline]
@@ -258,7 +258,7 @@ where
     #[inline]
     fn new(array: [T; N]) -> Self {
         let mut iter = array.into_iter();
-        let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
+        let current = iter.next().map(|v| (v.into_iter_ones_in(), 0));
         Self { iter, current }
     }
 }
@@ -279,7 +279,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_ones_with(),
+                self.iter.next()?.into_iter_ones_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }
@@ -305,7 +305,7 @@ where
     #[inline]
     fn new(array: [T; N]) -> Self {
         let mut iter = array.into_iter();
-        let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
+        let current = iter.next().map(|v| (v.into_iter_zeros_in(), 0));
         Self { iter, current }
     }
 }
@@ -326,7 +326,7 @@ where
             }
 
             self.current = Some((
-                self.iter.next()?.into_iter_zeros_with(),
+                self.iter.next()?.into_iter_zeros_in(),
                 offset.checked_add(T::BITS)?,
             ));
         }
