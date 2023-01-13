@@ -19,7 +19,7 @@ macro_rules! set {
     }};
 }
 
-/// Construct a bit set with specific values set with [`Shr`].
+/// Construct a bit set with specific values set using [`Shr`] indexing.
 ///
 /// [`Shr`]: crate::Shr
 ///

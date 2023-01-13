@@ -158,10 +158,7 @@ macro_rules! number {
 
             #[inline]
             fn iter_ones(&self) -> Self::IterOnes<'_> {
-                IterOnes {
-                    bits: *self,
-                    shift: PhantomData,
-                }
+                IterOnes::new(*self)
             }
 
             #[inline]
@@ -169,18 +166,12 @@ macro_rules! number {
             where
                 S: Shift,
             {
-                IterOnes {
-                    bits: *self,
-                    shift: PhantomData,
-                }
+                IterOnes::new(*self)
             }
 
             #[inline]
             fn iter_zeros(&self) -> Self::IterZeros<'_> {
-                IterZeros {
-                    bits: *self,
-                    shift: PhantomData,
-                }
+                IterZeros::new(*self)
             }
 
             #[inline]
@@ -188,10 +179,7 @@ macro_rules! number {
             where
                 S: Shift,
             {
-                IterZeros {
-                    bits: *self,
-                    shift: PhantomData,
-                }
+                IterZeros::new(*self)
             }
         }
 
@@ -296,10 +284,7 @@ macro_rules! number {
 
             #[inline]
             fn into_iter_ones(self) -> Self::IntoIterOnes {
-                IterOnes {
-                    bits: self,
-                    shift: PhantomData,
-                }
+                IterOnes::new(self)
             }
 
             #[inline]
@@ -307,18 +292,12 @@ macro_rules! number {
             where
                 S: Shift,
             {
-                IterOnes {
-                    bits: self,
-                    shift: PhantomData,
-                }
+                IterOnes::new(self)
             }
 
             #[inline]
             fn into_iter_zeros(self) -> Self::IntoIterZeros {
-                IterZeros {
-                    bits: self,
-                    shift: PhantomData,
-                }
+                IterZeros::new(self)
             }
 
             #[inline]
@@ -326,10 +305,7 @@ macro_rules! number {
             where
                 S: Shift,
             {
-                IterZeros {
-                    bits: self,
-                    shift: PhantomData,
-                }
+                IterZeros::new(self)
             }
         }
     };
@@ -351,12 +327,19 @@ number!(i128);
 /// An iterator over ones in a primitive number.
 #[derive(Clone)]
 #[repr(transparent)]
-pub struct IterOnes<T, S>
-where
-    T: Number,
-{
+pub struct IterOnes<T, S> {
     bits: T,
     shift: PhantomData<S>,
+}
+
+impl<T, S> IterOnes<T, S> {
+    #[inline]
+    const fn new(bits: T) -> Self {
+        Self {
+            bits,
+            shift: PhantomData,
+        }
+    }
 }
 
 impl<T, S> Iterator for IterOnes<T, S>
@@ -421,6 +404,16 @@ where
 pub struct IterZeros<T, S> {
     bits: T,
     shift: PhantomData<S>,
+}
+
+impl<T, S> IterZeros<T, S> {
+    #[inline]
+    const fn new(bits: T) -> Self {
+        Self {
+            bits,
+            shift: PhantomData,
+        }
+    }
 }
 
 impl<T, S> Iterator for IterZeros<T, S>

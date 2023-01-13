@@ -137,7 +137,7 @@ where
     /// ```
     #[inline]
     fn iter_ones(&self) -> Self::IterOnes<'_> {
-        IterOnes::new(IntoIterator::into_iter(self))
+        IterOnes::new(self)
     }
 
     /// Iterates over all ones in the slice using a custom shift ordering.
@@ -156,7 +156,7 @@ where
     where
         S: Shift,
     {
-        IterOnes::new(IntoIterator::into_iter(self))
+        IterOnes::new(self)
     }
 
     /// Iterates over all zeros in the slice using the default shift ordering.
@@ -172,7 +172,7 @@ where
     /// ```
     #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        IterZeros::new(IntoIterator::into_iter(self))
+        IterZeros::new(self)
     }
 
     /// Iterates over all zeros in the slice using a custom shift ordering.
@@ -191,7 +191,7 @@ where
     where
         S: Shift,
     {
-        IterZeros::new(IntoIterator::into_iter(self))
+        IterZeros::new(self)
     }
 }
 
@@ -304,7 +304,8 @@ where
     S: Shift,
 {
     #[inline]
-    pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
+    pub(crate) fn new(slice: &'a [T]) -> Self {
+        let mut iter = slice.iter();
         let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
         Self { iter, current }
     }
@@ -353,7 +354,8 @@ where
     S: Shift,
 {
     #[inline]
-    pub(crate) fn new(mut iter: core::slice::Iter<'a, T>) -> Self {
+    pub(crate) fn new(slice: &'a [T]) -> Self {
+        let mut iter = slice.iter();
         let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
         Self { iter, current }
     }

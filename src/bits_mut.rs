@@ -86,7 +86,7 @@ pub trait BitsMut: Bits {
         self.set_bit_with::<Shl>(index);
     }
 
-    /// Set the given bit with [`Shr`].
+    /// Set the given bit using [`Shr`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
@@ -185,7 +185,7 @@ pub trait BitsMut: Bits {
         self.clear_bit_with::<Shl>(index);
     }
 
-    /// Clear the given bit with [`Shr`].
+    /// Clear the given bit using [`Shr`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///

@@ -220,10 +220,7 @@ impl<T> Set<T> {
     /// ```
     #[inline]
     pub const fn new(bits: T) -> Self {
-        Self {
-            shift: PhantomData,
-            bits,
-        }
+        Self::new_with(bits)
     }
 }
 
@@ -565,10 +562,7 @@ where
 {
     #[inline]
     fn clone(&self) -> Self {
-        Self {
-            shift: PhantomData,
-            bits: self.bits.clone(),
-        }
+        Self::new_with(self.bits.clone())
     }
 }
 
@@ -687,10 +681,7 @@ where
 {
     #[inline]
     fn from(bits: T) -> Self {
-        Set {
-            shift: PhantomData,
-            bits,
-        }
+        Self::new_with(bits)
     }
 }
 

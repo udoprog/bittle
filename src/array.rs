@@ -89,7 +89,7 @@ where
 
     #[inline]
     fn into_iter_ones(self) -> Self::IntoIterOnes {
-        IntoIterOnes::new(IntoIterator::into_iter(self))
+        IntoIterOnes::new(self)
     }
 
     #[inline]
@@ -97,12 +97,12 @@ where
     where
         S: Shift,
     {
-        IntoIterOnes::new(IntoIterator::into_iter(self))
+        IntoIterOnes::new(self)
     }
 
     #[inline]
     fn into_iter_zeros(self) -> Self::IntoIterZeros {
-        IntoIterZeros::new(IntoIterator::into_iter(self))
+        IntoIterZeros::new(self)
     }
 
     #[inline]
@@ -110,7 +110,7 @@ where
     where
         S: Shift,
     {
-        IntoIterZeros::new(IntoIterator::into_iter(self))
+        IntoIterZeros::new(self)
     }
 }
 
@@ -158,7 +158,7 @@ where
 
     #[inline]
     fn iter_ones(&self) -> Self::IterOnes<'_> {
-        IterOnes::new(IntoIterator::into_iter(self))
+        IterOnes::new(self)
     }
 
     #[inline]
@@ -166,12 +166,12 @@ where
     where
         S: Shift,
     {
-        IterOnes::new(IntoIterator::into_iter(self))
+        IterOnes::new(self)
     }
 
     #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
-        IterZeros::new(IntoIterator::into_iter(self))
+        IterZeros::new(self)
     }
 
     #[inline]
@@ -179,7 +179,7 @@ where
     where
         S: Shift,
     {
-        IterZeros::new(IntoIterator::into_iter(self))
+        IterZeros::new(self)
     }
 }
 
@@ -256,7 +256,8 @@ where
     S: Shift,
 {
     #[inline]
-    fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
+    fn new(array: [T; N]) -> Self {
+        let mut iter = array.into_iter();
         let current = iter.next().map(|v| (v.into_iter_ones_with(), 0));
         Self { iter, current }
     }
@@ -271,9 +272,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let Some((it, offset)) = &mut self.current else {
-                return None;
-            };
+            let (it, offset) = self.current.as_mut()?;
 
             if let Some(index) = it.next() {
                 return offset.checked_add(index);
@@ -304,7 +303,8 @@ where
     S: Shift,
 {
     #[inline]
-    fn new(mut iter: core::array::IntoIter<T, N>) -> Self {
+    fn new(array: [T; N]) -> Self {
+        let mut iter = array.into_iter();
         let current = iter.next().map(|v| (v.into_iter_zeros_with(), 0));
         Self { iter, current }
     }
@@ -319,9 +319,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            let Some((it, offset)) = &mut self.current else {
-                return None;
-            };
+            let (it, offset) = self.current.as_mut()?;
 
             if let Some(index) = it.next() {
                 return offset.checked_add(index);

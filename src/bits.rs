@@ -267,7 +267,7 @@ pub trait Bits: Sealed {
         self.test_bit_with::<Shl>(index)
     }
 
-    /// Test if the given bit is set using [`Shr`].
+    /// Test if the given bit is set using [`Shr`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
     ///
@@ -424,6 +424,32 @@ pub trait Bits: Sealed {
     where
         S: Shift;
 
+    /// Construct an iterator over zeros in the bit set using [`Shr`] indexing.
+    ///
+    /// Will iterate through elements from smallest to largest index.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: u8 = bittle::set_shr![3, 7];
+    /// assert!(set.iter_zeros_shr().eq([0, 1, 2, 4, 5, 6]));
+    /// ```
+    ///
+    /// A larger bit set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let set: [u8; 2] = bittle::set_shr![3, 7, 13, 14, 15];
+    /// assert!(set.iter_zeros_shr().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// ```
+    #[inline]
+    fn iter_zeros_shr(&self) -> Self::IterZerosWith<'_, Shr> {
+        self.iter_zeros_with()
+    }
+
     /// Join this bit set with an iterator, creating an iterator that only
     /// yields the elements which are set to ones using [`DefaultShift`].
     ///
@@ -485,7 +511,7 @@ pub trait Bits: Sealed {
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using [`Shr`].
+    /// yields the elements which are set to ones using [`Shr`] indexing.
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
     /// appropriate.
@@ -504,12 +530,13 @@ pub trait Bits: Sealed {
     ///
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
+    #[inline]
     fn join_ones_shr<I>(&self, iter: I) -> JoinOnes<Self::IterOnesWith<'_, Shr>, I::IntoIter>
     where
         Self: Sized,
         I: IntoIterator,
     {
-        JoinOnes::new(self.iter_ones_with(), iter.into_iter())
+        self.join_ones_with(iter)
     }
 }
 
