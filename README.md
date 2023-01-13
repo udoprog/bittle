@@ -19,7 +19,7 @@ Add `bittle` as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bittle = "0.5.0"
+bittle = "0.5.1"
 ```
 
 <br>
@@ -156,4 +156,5 @@ assert!(m.join_ones(&elements).eq([&10, &101]));
 [`Copy`]: https://doc.rust-lang.org/std/marker/trait.Copy.html
 [`set!`]: https://docs.rs/bittle/latest/bittle/macro.set.html
 [`u32`]: https://doc.rust-lang.org/std/primitive.u32.html
+[`u8`]: https://doc.rust-lang.org/std/primitive.u8.html
 [see issue #2]: https://github.com/udoprog/bittle/pull/2
