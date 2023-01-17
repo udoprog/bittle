@@ -353,8 +353,9 @@ pub trait Bits: Sealed {
     /// ```
     /// use bittle::Bits;
     ///
-    /// let set: [u32; 4] = bittle::set![4, 67, 71];
-    /// assert!(set.iter_ones().eq([4, 67, 71]));
+    /// let set: [u32; 4] = bittle::set![4, 67, 71, 127];
+    /// assert!(set.iter_ones().eq([4, 67, 71, 127]));
+    /// assert!(set.iter_ones().rev().eq([127, 71, 67, 4]));
     /// ```
     fn iter_ones(&self) -> Self::IterOnes<'_>;
 
@@ -460,6 +461,7 @@ pub trait Bits: Sealed {
     ///
     /// let set: [u8; 2] = bittle::set![3, 7, 13, 14, 15];
     /// assert!(set.iter_zeros().eq([0, 1, 2, 4, 5, 6, 8, 9, 10, 11, 12]));
+    /// assert!(set.iter_zeros().rev().eq([12, 11, 10, 9, 8, 6, 5, 4, 2, 1, 0]));
     /// ```
     fn iter_zeros(&self) -> Self::IterZeros<'_>;
 

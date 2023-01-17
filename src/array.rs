@@ -264,124 +264,18 @@ where
     }
 }
 
-/// An owned iterator over the bits set to one in an array.
-pub struct IntoIterOnes<T, const N: usize, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterOnesIn<E>, u32)>,
+impl_iter! {
+    /// An owned iterator over the bits set to one in an array.
+    {T, const N: usize, E} IntoIterOnes<T, N, E>
+    {into_iter_ones_in, T::IntoIterOnesIn<E>, core::array::IntoIter<T, N>}
+    {array: [T; N] => N}
+    {T: Clone}
 }
 
-impl<T, const N: usize, E> Clone for IntoIterOnes<T, N, E>
-where
-    T: Clone + BitsOwned,
-    E: Endian,
-    T::IntoIterOnesIn<E>: Clone,
-{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            iter: self.iter.clone(),
-            current: self.current.clone(),
-        }
-    }
-}
-
-impl<T, const N: usize, E> IntoIterOnes<T, N, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    #[inline]
-    fn new(array: [T; N]) -> Self {
-        let mut iter = array.into_iter();
-        let current = iter.next().map(|v| (v.into_iter_ones_in(), 0));
-        Self { iter, current }
-    }
-}
-
-impl<T, const N: usize, E> Iterator for IntoIterOnes<T, N, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    type Item = u32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let (it, offset) = self.current.as_mut()?;
-
-            if let Some(index) = it.next() {
-                return offset.checked_add(index);
-            }
-
-            self.current = Some((
-                self.iter.next()?.into_iter_ones_in(),
-                offset.checked_add(T::BITS)?,
-            ));
-        }
-    }
-}
-
-/// An owned iterator over the bits set to zero in an array.
-pub struct IntoIterZeros<T, const N: usize, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    iter: core::array::IntoIter<T, N>,
-    current: Option<(T::IntoIterZerosIn<E>, u32)>,
-}
-
-impl<T, const N: usize, E> Clone for IntoIterZeros<T, N, E>
-where
-    T: Clone + BitsOwned,
-    E: Endian,
-    T::IntoIterZerosIn<E>: Clone,
-{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            iter: self.iter.clone(),
-            current: self.current.clone(),
-        }
-    }
-}
-
-impl<T, const N: usize, E> IntoIterZeros<T, N, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    #[inline]
-    fn new(array: [T; N]) -> Self {
-        let mut iter = array.into_iter();
-        let current = iter.next().map(|v| (v.into_iter_zeros_in(), 0));
-        Self { iter, current }
-    }
-}
-
-impl<T, const N: usize, E> Iterator for IntoIterZeros<T, N, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    type Item = u32;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let (it, offset) = self.current.as_mut()?;
-
-            if let Some(index) = it.next() {
-                return offset.checked_add(index);
-            }
-
-            self.current = Some((
-                self.iter.next()?.into_iter_zeros_in(),
-                offset.checked_add(T::BITS)?,
-            ));
-        }
-    }
+impl_iter! {
+    /// An owned iterator over the bits set to zero in an array.
+    {T, const N: usize, E} IntoIterZeros<T, N, E>
+    {into_iter_zeros_in, T::IntoIterZerosIn<E>, core::array::IntoIter<T, N>}
+    {array: [T; N] => N}
+    {T: Clone}
 }

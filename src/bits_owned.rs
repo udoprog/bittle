@@ -501,8 +501,9 @@ pub trait BitsOwned: BitsMut {
     /// ```
     /// use bittle::{Bits, BitsOwned};
     ///
-    /// let a: [u32; 4] = bittle::set![4, 63, 71];
-    /// assert!(a.into_iter_ones().eq([4, 63, 71]));
+    /// let a: [u32; 4] = bittle::set![4, 63, 71, 127];
+    /// assert!(a.into_iter_ones().eq([4, 63, 71, 127]));
+    /// assert!(a.into_iter_ones().rev().eq([127, 71, 63, 4]));
     /// ```
     fn into_iter_ones(self) -> Self::IntoIterOnes;
 
@@ -615,6 +616,7 @@ pub trait BitsOwned: BitsMut {
     ///
     /// let a: [u8; 2] = bittle::set![4, 7, 10];
     /// assert!(a.into_iter_zeros().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
+    /// assert!(a.into_iter_zeros().rev().eq([15, 14, 13, 12, 11, 9, 8, 6, 5, 3, 2, 1, 0]));
     /// ```
     fn into_iter_zeros(self) -> Self::IntoIterZeros;
 

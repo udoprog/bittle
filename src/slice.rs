@@ -313,130 +313,18 @@ where
     }
 }
 
-/// A borrowing iterator over the bits set to one in a slice.
-pub struct IterOnes<'a, T, E>
-where
-    T: Bits,
-    E: Endian,
-{
-    iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IterOnesIn<'a, E>, u32)>,
+impl_iter! {
+    /// A borrowing iterator over the bits set to one in a slice.
+    {T, E} IterOnes<'a, T, E>
+    {iter_ones_in, T::IterOnesIn<'a, E>, core::slice::Iter<'a, T>}
+    {slice: &'a [T] => slice.len()}
+    {}
 }
 
-impl<'a, T, E> Clone for IterOnes<'a, T, E>
-where
-    T: Clone + Bits,
-    E: Endian,
-    T::IterOnesIn<'a, E>: Clone,
-{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            iter: self.iter.clone(),
-            current: self.current.clone(),
-        }
-    }
-}
-
-impl<'a, T, E> IterOnes<'a, T, E>
-where
-    T: Bits,
-    E: Endian,
-{
-    #[inline]
-    pub(crate) fn new(slice: &'a [T]) -> Self {
-        let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.iter_ones_in(), 0));
-        Self { iter, current }
-    }
-}
-
-impl<'a, T, E> Iterator for IterOnes<'a, T, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    type Item = u32;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let Some((it, offset)) = &mut self.current else {
-                return None;
-            };
-
-            if let Some(index) = it.next() {
-                return offset.checked_add(index);
-            }
-
-            self.current = Some((
-                self.iter.next()?.iter_ones_in(),
-                offset.checked_add(T::BITS)?,
-            ));
-        }
-    }
-}
-
-/// A borrowing iterator over the bits set to one in a slice.
-pub struct IterZeros<'a, T, E>
-where
-    T: Bits,
-    E: Endian,
-{
-    iter: core::slice::Iter<'a, T>,
-    current: Option<(T::IterZerosIn<'a, E>, u32)>,
-}
-
-impl<'a, T, E> Clone for IterZeros<'a, T, E>
-where
-    T: Clone + Bits,
-    E: Endian,
-    T::IterZerosIn<'a, E>: Clone,
-{
-    #[inline]
-    fn clone(&self) -> Self {
-        Self {
-            iter: self.iter.clone(),
-            current: self.current.clone(),
-        }
-    }
-}
-
-impl<'a, T, E> IterZeros<'a, T, E>
-where
-    T: Bits,
-    E: Endian,
-{
-    #[inline]
-    pub(crate) fn new(slice: &'a [T]) -> Self {
-        let mut iter = slice.iter();
-        let current = iter.next().map(|v| (v.iter_zeros_in(), 0));
-        Self { iter, current }
-    }
-}
-
-impl<'a, T, E> Iterator for IterZeros<'a, T, E>
-where
-    T: BitsOwned,
-    E: Endian,
-{
-    type Item = u32;
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        loop {
-            let Some((it, offset)) = &mut self.current else {
-                return None;
-            };
-
-            if let Some(index) = it.next() {
-                return offset.checked_add(index);
-            }
-
-            self.current = Some((
-                self.iter.next()?.iter_zeros_in(),
-                offset.checked_add(T::BITS)?,
-            ));
-        }
-    }
+impl_iter! {
+    /// An owned iterator over the bits set to zero in an array.
+    {T, E} IterZeros<'a, T, E>
+    {iter_zeros_in, T::IterZerosIn<'a, E>, core::slice::Iter<'a, T>}
+    {slice: &'a [T] => slice.len()}
+    {}
 }
