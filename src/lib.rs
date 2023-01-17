@@ -167,6 +167,9 @@ const _: () = assert!(core::mem::size_of::<u32>() <= core::mem::size_of::<usize>
 #[macro_use]
 mod macros;
 
+#[macro_use]
+mod internal;
+
 pub mod array;
 pub mod number;
 pub mod slice;
