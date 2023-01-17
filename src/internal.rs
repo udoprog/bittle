@@ -61,35 +61,16 @@ macro_rules! impl_iter {
             type Item = u32;
 
             fn next(&mut self) -> Option<Self::Item> {
-                loop {
-                    if let Some((it, offset)) = &mut self.head {
-                        let offset = *offset;
-
-                        if let Some(index) = it.next() {
-                            return offset.checked_add(index);
-                        }
-
-                        self.head = None;
-
-                        if let Some(value) = self.iter.next() {
-                            let bits = value.bits_capacity();
-                            self.head = Some((value.$build(), offset.checked_add(bits)?));
-                            continue;
-                        }
+                while let Some((index, o)) = $crate::internal::next_or_unset(&mut self.head, Iterator::next) {
+                    if let index @ Some(_) = index {
+                        return index;
                     }
 
-                    if let Some((it, offset)) = &mut self.tail {
-                        let offset = *offset;
-
-                        if let Some(index) = it.next() {
-                            return offset.checked_add(index);
-                        }
-
-                        self.tail = None;
-                    }
-
-                    return None;
+                    self.head = self.iter.next().and_then(|v| Some((v.$build(), o.checked_add(T::BITS)?)));
                 }
+
+                let (index, _) = $crate::internal::next_or_unset(&mut self.tail, Iterator::next)?;
+                index
             }
         }
 
@@ -100,34 +81,16 @@ macro_rules! impl_iter {
             E: Endian,
         {
             fn next_back(&mut self) -> Option<Self::Item> {
-                loop {
-                    if let Some((it, offset)) = &mut self.tail {
-                        let offset = *offset;
-
-                        if let Some(index) = it.next_back() {
-                            return offset.checked_add(index);
-                        }
-
-                        self.tail = None;
-
-                        if let Some(value) = self.iter.next_back() {
-                            self.tail = Some((value.$build(), offset.checked_sub(T::BITS)?));
-                            continue;
-                        }
+                while let Some((index, o)) = $crate::internal::next_or_unset(&mut self.tail, DoubleEndedIterator::next_back) {
+                    if let index @ Some(_) = index {
+                        return index;
                     }
 
-                    if let Some((it, offset)) = &mut self.head {
-                        let offset = *offset;
-
-                        if let Some(index) = it.next_back() {
-                            return offset.checked_add(index);
-                        }
-
-                        self.head = None;
-                    }
-
-                    return None;
+                    self.tail = self.iter.next_back().and_then(|v| Some((v.$build(), o.checked_sub(T::BITS)?)));
                 }
+
+                let (index, _) = $crate::internal::next_or_unset(&mut self.head, DoubleEndedIterator::next_back)?;
+                index
             }
         }
 
@@ -138,4 +101,26 @@ macro_rules! impl_iter {
         {
         }
     };
+}
+
+#[inline]
+pub(crate) fn next_or_unset<I, F>(
+    iter: &mut Option<(I, u32)>,
+    advance: F,
+) -> Option<(Option<u32>, u32)>
+where
+    F: FnOnce(&mut I) -> Option<u32>,
+{
+    let &mut Some((ref mut it, offset)) = iter else {
+        return None;
+    };
+
+    let value = if let Some(index) = advance(it) {
+        offset.checked_add(index)
+    } else {
+        *iter = None;
+        None
+    };
+
+    Some((value, offset))
 }

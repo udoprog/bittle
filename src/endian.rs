@@ -20,7 +20,7 @@ mod sealed {
 }
 
 /// Trait governing endian-dependent operations for a primitive.
-pub trait Endian: 'static + self::sealed::Sealed {
+pub trait Endian: self::sealed::Sealed {
     #[doc(hidden)]
     fn mask<T>(index: u32) -> T
     where
