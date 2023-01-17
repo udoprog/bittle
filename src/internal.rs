@@ -26,7 +26,12 @@ macro_rules! impl_iter {
             pub(crate) fn new($var: $var_ty) -> Self {
                 let mut iter = $var.into_iter();
                 let head = iter.next().map(|v| (v.$build(), 0));
-                let tail = iter.next_back().and_then(|v| Some((v.$build(), ($len as u32 - 1).checked_mul(T::BITS)?)));
+
+                let tail = iter.next_back().and_then(|v| {
+                    let base = u32::try_from($len).ok()?.checked_sub(1)?.checked_mul(T::BITS)?;
+                    Some((v.$build(), base))
+                });
+
                 Self { iter, head, tail }
             }
         }
@@ -67,7 +72,8 @@ macro_rules! impl_iter {
                         self.head = None;
 
                         if let Some(value) = self.iter.next() {
-                            self.head = Some((value.$build(), offset.checked_add(T::BITS)?));
+                            let bits = value.bits_capacity();
+                            self.head = Some((value.$build(), offset.checked_add(bits)?));
                             continue;
                         }
                     }

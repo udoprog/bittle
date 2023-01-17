@@ -87,7 +87,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        T::mask(index)
+        T::BIT_RIGHT.wrapping_shl(index)
     }
 
     #[inline]
@@ -95,7 +95,7 @@ impl Endian for BigEndian {
     where
         T: Number,
     {
-        T::mask_rev(index)
+        T::BIT_LEFT.wrapping_shr(index)
     }
 
     #[inline]
@@ -165,7 +165,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        T::mask_rev(index)
+        T::BIT_LEFT.wrapping_shr(index)
     }
 
     #[inline]
@@ -173,7 +173,7 @@ impl Endian for LittleEndian {
     where
         T: Number,
     {
-        T::mask(index)
+        T::BIT_RIGHT.wrapping_shl(index)
     }
 
     #[inline]

@@ -6,20 +6,13 @@ use crate::endian::{BigEndian, Endian, LittleEndian};
 pub use self::join_ones::JoinOnes;
 
 mod sealed {
-    use crate::endian::Endian;
-
     pub trait Sealed {}
 
     impl<T> Sealed for &mut T where T: ?Sized + crate::Bits {}
     impl<T> Sealed for &T where T: ?Sized + crate::Bits {}
     impl<T> Sealed for [T] {}
     impl<T, const N: usize> Sealed for [T; N] {}
-    impl<T, E> Sealed for crate::set::Set<T, E>
-    where
-        T: ?Sized,
-        E: Endian,
-    {
-    }
+    impl<T, E> Sealed for crate::set::Set<T, E> where T: ?Sized {}
 }
 
 pub(crate) use self::sealed::Sealed;
