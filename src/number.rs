@@ -9,12 +9,12 @@ use crate::bits_owned::BitsOwned;
 use crate::endian::{DefaultEndian, Endian};
 
 mod sealed {
-    use core::ops::{BitAndAssign, BitOrAssign, Not};
+    use core::ops::{BitOrAssign, BitXorAssign};
 
     /// Basic numerical trait for the plumbing of a bit set. This ensures that only
     /// primitive types can be used as the basis of a bit set backed by an array,
     /// like `[u64; 4]` and not `[[u32; 2]; 4]`.
-    pub trait Number: Copy + Not<Output = Self> + BitAndAssign + BitOrAssign + Eq {
+    pub trait Number: Copy + BitXorAssign + BitOrAssign + Eq {
         const ZEROS: Self;
         const ONES: Self;
         const BITS: u32;
@@ -39,7 +39,7 @@ macro_rules! number {
         impl Number for $ty {
             const ONES: $ty = !0;
             const ZEROS: $ty = 0;
-            const BITS: u32 = (core::mem::size_of::<$ty>() * 8) as u32;
+            const BITS: u32 = <$ty>::BITS;
             const BIT_RIGHT: $ty = 1 as $ty;
             const BIT_LEFT: $ty = !(<$ty>::MAX >> 1);
 
@@ -360,7 +360,7 @@ where
         }
 
         let index = E::zeros(self.bits);
-        self.bits &= !E::mask::<T>(index);
+        self.bits ^= E::mask::<T>(index);
         Some(index)
     }
 }
@@ -386,9 +386,10 @@ where
             return None;
         }
 
-        let index = E::zeros_rev(self.bits);
-        self.bits &= !E::mask_rev::<T>(index);
-        Some(T::BITS - index - 1)
+        let index = T::BITS.wrapping_sub(E::zeros_rev(self.bits).wrapping_add(1));
+
+        self.bits ^= E::mask::<T>(index);
+        Some(index)
     }
 }
 
@@ -509,9 +510,9 @@ where
             return None;
         }
 
-        let index = E::ones_rev(self.bits);
-        self.bits |= E::mask_rev::<T>(index);
-        Some(T::BITS - index - 1)
+        let index = T::BITS.wrapping_sub(E::ones_rev(self.bits).wrapping_add(1));
+        self.bits |= E::mask::<T>(index);
+        Some(index)
     }
 }
 

@@ -27,11 +27,6 @@ pub trait Endian: self::sealed::Sealed {
         T: Number;
 
     #[doc(hidden)]
-    fn mask_rev<T>(index: u32) -> T
-    where
-        T: Number;
-
-    #[doc(hidden)]
     fn ones<T>(value: T) -> u32
     where
         T: Number;
@@ -88,14 +83,6 @@ impl Endian for BigEndian {
         T: Number,
     {
         T::BIT_RIGHT.wrapping_shl(index)
-    }
-
-    #[inline]
-    fn mask_rev<T>(index: u32) -> T
-    where
-        T: Number,
-    {
-        T::BIT_LEFT.wrapping_shr(index)
     }
 
     #[inline]
@@ -166,14 +153,6 @@ impl Endian for LittleEndian {
         T: Number,
     {
         T::BIT_LEFT.wrapping_shr(index)
-    }
-
-    #[inline]
-    fn mask_rev<T>(index: u32) -> T
-    where
-        T: Number,
-    {
-        T::BIT_RIGHT.wrapping_shl(index)
     }
 
     #[inline]
