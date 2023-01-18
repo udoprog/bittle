@@ -451,16 +451,16 @@ where
     }
 
     #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        self.bits.test_bit_in::<U>(index)
+    }
+
+    #[inline]
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian,
     {
         self.bits.test_bit_in::<E>(index)
-    }
-
-    #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        self.bits.test_bit_in::<U>(index)
     }
 
     #[inline]

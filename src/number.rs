@@ -118,16 +118,16 @@ macro_rules! number {
             }
 
             #[inline]
+            fn test_bit(&self, index: u32) -> bool {
+                self.test_bit_in::<DefaultEndian>(index)
+            }
+
+            #[inline]
             fn test_bit_in<E>(&self, index: u32) -> bool
             where
                 E: Endian,
             {
                 *self & E::mask::<Self>(index) != 0
-            }
-
-            #[inline]
-            fn test_bit(&self, index: u32) -> bool {
-                self.test_bit_in::<DefaultEndian>(index)
             }
 
             #[inline]

@@ -13,8 +13,8 @@ macro_rules! impl_iter {
             E: Endian,
         {
             iter: $iter,
-            head: Option<($assoc, u32)>,
-            tail: Option<($assoc, u32)>,
+            head: (Option<$assoc>, u32),
+            tail: (Option<$assoc>, u32),
         }
 
         impl<$($lt ,)? $($i)*> $name<$($lt ,)? $($g),*>
@@ -25,13 +25,8 @@ macro_rules! impl_iter {
             #[inline]
             pub(crate) fn new($var: $var_ty) -> Self {
                 let mut iter = $var.into_iter();
-                let head = iter.next().map(|v| (v.$build(), 0));
-
-                let tail = iter.next_back().and_then(|v| {
-                    let base = u32::try_from($len).ok()?.checked_sub(1)?.checked_mul(T::BITS)?;
-                    Some((v.$build(), base))
-                });
-
+                let head = (iter.next().map(|v| v.$build()), 0);
+                let tail = (iter.next_back().map(|v| v.$build()), u32::try_from($len).ok().and_then(|v| v.saturating_sub(1).checked_mul(T::BITS)).expect("collection overflow"));
                 Self { iter, head, tail }
             }
         }
@@ -66,7 +61,7 @@ macro_rules! impl_iter {
                         return index;
                     }
 
-                    self.head = self.iter.next().and_then(|v| Some((v.$build(), o.checked_add(T::BITS)?)));
+                    self.head = (self.iter.next().map(|v| v.$build()), o.checked_add(T::BITS)?);
                 }
 
                 let (index, _) = $crate::internal::next_or_unset(&mut self.tail, Iterator::next)?;
@@ -86,7 +81,7 @@ macro_rules! impl_iter {
                         return index;
                     }
 
-                    self.tail = self.iter.next_back().and_then(|v| Some((v.$build(), o.checked_sub(T::BITS)?)));
+                    self.tail = (self.iter.next_back().map(|v| v.$build()), o.checked_sub(T::BITS)?);
                 }
 
                 let (index, _) = $crate::internal::next_or_unset(&mut self.head, DoubleEndedIterator::next_back)?;
@@ -105,20 +100,20 @@ macro_rules! impl_iter {
 
 #[inline]
 pub(crate) fn next_or_unset<I, F>(
-    iter: &mut Option<(I, u32)>,
+    iter: &mut (Option<I>, u32),
     advance: F,
 ) -> Option<(Option<u32>, u32)>
 where
     F: FnOnce(&mut I) -> Option<u32>,
 {
-    let &mut Some((ref mut it, offset)) = iter else {
+    let &mut (Some(ref mut it), offset) = iter else {
         return None;
     };
 
     let value = if let Some(index) = advance(it) {
         offset.checked_add(index)
     } else {
-        *iter = None;
+        iter.0 = None;
         None
     };
 

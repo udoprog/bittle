@@ -199,6 +199,37 @@ pub trait Bits: Sealed {
     /// ```
     fn all_ones(&self) -> bool;
 
+    /// Test if the given bit is set using [`DefaultEndian`] indexing.
+    ///
+    /// Indexes which are out of bounds will wrap around in the bitset.
+    ///
+    /// [`DefaultEndian`]: crate::DefaultEndian
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: u32 = bittle::set![];
+    /// assert!(!a.test_bit(32));
+    ///
+    /// let a: u32 = bittle::set![32];
+    /// assert!(a.test_bit(32));
+    /// ```
+    ///
+    /// Using a larger set:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: [u32; 2] = bittle::set![];
+    /// assert!(!a.test_bit(55));
+    ///
+    /// let a: [u32; 2] = bittle::set![55];
+    /// assert!(a.test_bit(55));
+    /// ```
+    fn test_bit(&self, index: u32) -> bool;
+
     /// Test if the given bit is set using custom [`Endian`] indexing.
     ///
     /// Indexes which are out of bounds will wrap around in the bitset.
@@ -229,37 +260,6 @@ pub trait Bits: Sealed {
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian;
-
-    /// Test if the given bit is set using [`DefaultEndian`].
-    ///
-    /// Indexes which are out of bounds will wrap around in the bitset.
-    ///
-    /// [`DefaultEndian`]: crate::DefaultEndian
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let a: u32 = bittle::set![];
-    /// assert!(!a.test_bit(32));
-    ///
-    /// let a: u32 = bittle::set![32];
-    /// assert!(a.test_bit(32));
-    /// ```
-    ///
-    /// Using a larger set:
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let a: [u32; 2] = bittle::set![];
-    /// assert!(!a.test_bit(55));
-    ///
-    /// let a: [u32; 2] = bittle::set![55];
-    /// assert!(a.test_bit(55));
-    /// ```
-    fn test_bit(&self, index: u32) -> bool;
 
     /// Test if the given bit is set using [`LittleEndian`] indexing.
     ///
@@ -567,7 +567,8 @@ pub trait Bits: Sealed {
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
-    /// yields the elements which are set to ones using [`DefaultEndian`].
+    /// yields the elements which are set to ones using [`DefaultEndian`]
+    /// indexing.
     ///
     /// The underlying iterator is advanced using [`Iterator::nth`] as
     /// appropriate.
@@ -704,16 +705,16 @@ where
     }
 
     #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        (**self).test_bit(index)
+    }
+
+    #[inline]
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian,
     {
         (**self).test_bit_in::<E>(index)
-    }
-
-    #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        (**self).test_bit(index)
     }
 
     #[inline]
@@ -791,16 +792,16 @@ where
     }
 
     #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        (**self).test_bit(index)
+    }
+
+    #[inline]
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian,
     {
         (**self).test_bit_in::<E>(index)
-    }
-
-    #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        (**self).test_bit(index)
     }
 
     #[inline]

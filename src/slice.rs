@@ -53,11 +53,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned};
+    /// use bittle::Bits;
     ///
     /// let a: [u8; 4] = bittle::set![4, 11, 14];
     /// let a = &a[..2];
-    /// assert_eq!(a.bits_capacity(), <[u8; 2]>::BITS);
+    /// assert_eq!(a.bits_capacity(), 16);
     /// ```
     #[inline]
     fn bits_capacity(&self) -> u32 {
@@ -70,9 +70,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned};
+    /// use bittle::Bits;
     ///
-    /// let a = <[u8; 2]>::zeros();
+    /// let a: [u8; 2] = bittle::set![];
     /// let a = a.as_slice();
     /// assert!(a.all_zeros());
     ///
@@ -90,9 +90,9 @@ where
     /// # Examples
     ///
     /// ```
-    /// use bittle::{Bits, BitsOwned};
+    /// use bittle::Bits;
     ///
-    /// let a = <[u8; 2]>::ones();
+    /// let a: [u8; 2] = bittle::set![0..16];
     /// let a = a.as_slice();
     /// assert!(a.all_ones());
     ///
@@ -103,6 +103,22 @@ where
     #[inline]
     fn all_ones(&self) -> bool {
         self.iter().all(Bits::all_ones)
+    }
+
+    /// Test if the given bit is set in the slice.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
+    /// let a: &[u8] = a.as_slice();
+    /// assert!(a.test_bit(4));
+    /// ```
+    #[inline]
+    fn test_bit(&self, index: u32) -> bool {
+        self.test_bit_in::<DefaultEndian>(index)
     }
 
     /// Test if the given bit is set in the slice.
@@ -124,22 +140,6 @@ where
         self[((index / T::BITS) as usize % self.len())].test_bit_in::<E>(index % T::BITS)
     }
 
-    /// Test if the given bit is set in the slice.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bittle::Bits;
-    ///
-    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
-    /// let a: &[u8] = a.as_slice();
-    /// assert!(a.test_bit(4));
-    /// ```
-    #[inline]
-    fn test_bit(&self, index: u32) -> bool {
-        self.test_bit_in::<DefaultEndian>(index)
-    }
-
     /// Iterates over all ones in the slice using [`DefaultEndian`] indexing.
     ///
     /// # Examples
@@ -150,6 +150,9 @@ where
     /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
     /// let a: &[u8] = a.as_slice();
     /// assert!(a.iter_ones().eq([4, 11, 14]));
+    ///
+    /// let a: &[u8] = &[];
+    /// assert!(a.iter_ones().eq([]));
     /// ```
     #[inline]
     fn iter_ones(&self) -> Self::IterOnes<'_> {
@@ -161,11 +164,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use bittle::Bits;
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
+    /// let mut a: [u8; 2] = bittle::set_le![4, 11, 14];
     /// let a: &[u8] = a.as_slice();
-    /// assert!(a.iter_ones().eq([4, 11, 14]));
+    /// assert!(a.iter_ones_in::<LittleEndian>().eq([4, 11, 14]));
     /// ```
     #[inline]
     fn iter_ones_in<E>(&self) -> Self::IterOnesIn<'_, E>
@@ -185,6 +188,9 @@ where
     /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
     /// let a: &[u8] = a.as_slice();
     /// assert!(a.iter_zeros().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
+    ///
+    /// let a: &[u8] = &[];
+    /// assert!(a.iter_zeros().eq([]));
     /// ```
     #[inline]
     fn iter_zeros(&self) -> Self::IterZeros<'_> {
@@ -196,11 +202,11 @@ where
     /// # Examples
     ///
     /// ```
-    /// use bittle::Bits;
+    /// use bittle::{Bits, LittleEndian};
     ///
-    /// let mut a: [u8; 2] = bittle::set![4, 11, 14];
+    /// let mut a: [u8; 2] = bittle::set_le![4, 11, 14];
     /// let a: &[u8] = a.as_slice();
-    /// assert!(a.iter_zeros().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
+    /// assert!(a.iter_zeros_in::<LittleEndian>().eq([0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 13, 15]));
     /// ```
     #[inline]
     fn iter_zeros_in<E>(&self) -> Self::IterZerosIn<'_, E>
