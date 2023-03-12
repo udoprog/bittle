@@ -7,30 +7,34 @@ on:
       - main
 
 jobs:
-  clippy:
+  msrv:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install 1.68 --profile minimal --component clippy
-    - run: cargo +1.68 clippy --workspace --all-features --all-targets -- --deny warnings
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
-    - run: cargo build
+    - uses: dtolnay/rust-toolchain@1.65
+    - run: cargo test --all-targets
 
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal
-    - run: cargo test
+    - uses: dtolnay/rust-toolchain@stable
+    - run: cargo test --all-targets
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: dtolnay/rust-toolchain@1.65
+      with:
+        components: clippy
+    - run: cargo clippy --all-targets -- -D warnings
 
   rustfmt:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - run: rustup toolchain install stable --profile minimal --component rustfmt
+    - uses: dtolnay/rust-toolchain@stable
+      with:
+        components: rustfmt
     - run: cargo fmt --check
