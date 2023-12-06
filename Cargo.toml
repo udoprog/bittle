@@ -9,6 +9,6 @@ documentation = "https://docs.rs/bittle"
 readme = "README.md"
 homepage = "https://github.com/udoprog/bittle"
 repository = "https://github.com/udoprog/bittle"
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 keywords = ["bits", "bitvec", "container", "data-structure", "no_std"]
 categories = ["data-structures"]
