@@ -137,7 +137,7 @@ where
     where
         E: Endian,
     {
-        self[((index / T::BITS) as usize % self.len())].test_bit_in::<E>(index % T::BITS)
+        self[(index / T::BITS) as usize % self.len()].test_bit_in::<E>(index % T::BITS)
     }
 
     /// Iterates over all ones in the slice using [`DefaultEndian`] indexing.
@@ -238,7 +238,7 @@ where
     where
         E: Endian,
     {
-        self[((index / T::BITS) as usize % self.len())].set_bit_in::<E>(index % T::BITS);
+        self[(index / T::BITS) as usize % self.len()].set_bit_in::<E>(index % T::BITS);
     }
 
     #[inline]
@@ -263,7 +263,7 @@ where
     where
         E: Endian,
     {
-        self[((index / T::BITS) as usize % self.len())].clear_bit_in::<E>(index % T::BITS);
+        self[(index / T::BITS) as usize % self.len()].clear_bit_in::<E>(index % T::BITS);
     }
 
     #[inline]
