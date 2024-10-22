@@ -41,7 +41,7 @@ use crate::endian::{BigEndian, Endian, LittleEndian};
 /// assert!(!a.test_bit(77));
 /// assert!(a.union(b).test_bit(77));
 /// ```
-pub trait BitsOwned: BitsMut {
+pub trait BitsOwned: Sized + BitsMut {
     /// The number of bits in the bit set.
     ///
     /// # Examples
@@ -206,10 +206,7 @@ pub trait BitsOwned: BitsMut {
     /// ```
     #[must_use]
     #[inline]
-    fn with_bit_le(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
+    fn with_bit_le(self, bit: u32) -> Self {
         self.with_bit_in::<LittleEndian>(bit)
     }
 
@@ -235,10 +232,7 @@ pub trait BitsOwned: BitsMut {
     /// ```
     #[must_use]
     #[inline]
-    fn with_bit_be(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
+    fn with_bit_be(self, bit: u32) -> Self {
         self.with_bit_in::<BigEndian>(bit)
     }
 
@@ -314,10 +308,7 @@ pub trait BitsOwned: BitsMut {
     /// ```
     #[must_use]
     #[inline]
-    fn without_bit_le(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
+    fn without_bit_le(self, bit: u32) -> Self {
         self.without_bit_in::<LittleEndian>(bit)
     }
 
@@ -343,10 +334,7 @@ pub trait BitsOwned: BitsMut {
     /// ```
     #[must_use]
     #[inline]
-    fn without_bit_be(self, bit: u32) -> Self
-    where
-        Self: Sized,
-    {
+    fn without_bit_be(self, bit: u32) -> Self {
         self.without_bit_in::<BigEndian>(bit)
     }
 
@@ -556,10 +544,7 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_ones_le().eq([4, 63, 71]));
     /// ```
     #[inline]
-    fn into_iter_ones_le(self) -> Self::IntoIterOnesIn<LittleEndian>
-    where
-        Self: Sized,
-    {
+    fn into_iter_ones_le(self) -> Self::IntoIterOnesIn<LittleEndian> {
         self.into_iter_ones_in()
     }
 
@@ -586,10 +571,7 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_ones_be().eq([4, 63, 71]));
     /// ```
     #[inline]
-    fn into_iter_ones_be(self) -> Self::IntoIterOnesIn<BigEndian>
-    where
-        Self: Sized,
-    {
+    fn into_iter_ones_be(self) -> Self::IntoIterOnesIn<BigEndian> {
         self.into_iter_ones_in()
     }
 
@@ -669,10 +651,7 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_zeros_le().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     #[inline]
-    fn into_iter_zeros_le(self) -> Self::IntoIterZerosIn<LittleEndian>
-    where
-        Self: Sized,
-    {
+    fn into_iter_zeros_le(self) -> Self::IntoIterZerosIn<LittleEndian> {
         self.into_iter_zeros_in()
     }
 
@@ -699,10 +678,7 @@ pub trait BitsOwned: BitsMut {
     /// assert!(a.into_iter_zeros_be().eq([0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 13, 14, 15]));
     /// ```
     #[inline]
-    fn into_iter_zeros_be(self) -> Self::IntoIterZerosIn<BigEndian>
-    where
-        Self: Sized,
-    {
+    fn into_iter_zeros_be(self) -> Self::IntoIterZerosIn<BigEndian> {
         self.into_iter_zeros_in()
     }
 }

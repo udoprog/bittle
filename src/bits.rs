@@ -1,7 +1,7 @@
 //! Traits which define the behaviors of a bit set.
 
 mod join_ones;
-use crate::endian::{BigEndian, Endian, LittleEndian};
+use crate::endian::{BigEndian, DefaultEndian, Endian, LittleEndian};
 
 pub use self::join_ones::JoinOnes;
 
@@ -557,9 +557,8 @@ pub trait Bits: Sealed {
     ///
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
-    fn join_ones_in<I, E>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, E>, I::IntoIter>
+    fn join_ones_in<I, E>(&self, iter: I) -> JoinOnes<'_, Self, E, I::IntoIter>
     where
-        Self: Sized,
         I: IntoIterator,
         E: Endian,
     {
@@ -590,12 +589,11 @@ pub trait Bits: Sealed {
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
     #[inline]
-    fn join_ones<I>(&self, iter: I) -> JoinOnes<Self::IterOnes<'_>, I::IntoIter>
+    fn join_ones<I>(&self, iter: I) -> JoinOnes<'_, Self, DefaultEndian, I::IntoIter>
     where
-        Self: Sized,
         I: IntoIterator,
     {
-        JoinOnes::new(self.iter_ones(), iter.into_iter())
+        JoinOnes::new(self.iter_ones_in(), iter.into_iter())
     }
 
     /// Join this bit set with an iterator, creating an iterator that only
@@ -619,9 +617,8 @@ pub trait Bits: Sealed {
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
     #[inline]
-    fn join_ones_le<I>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, LittleEndian>, I::IntoIter>
+    fn join_ones_le<I>(&self, iter: I) -> JoinOnes<'_, Self, LittleEndian, I::IntoIter>
     where
-        Self: Sized,
         I: IntoIterator,
     {
         self.join_ones_in(iter)
@@ -648,9 +645,8 @@ pub trait Bits: Sealed {
     /// assert_eq!(values, vec![true, true, false, true]);
     /// ```
     #[inline]
-    fn join_ones_be<I>(&self, iter: I) -> JoinOnes<Self::IterOnesIn<'_, BigEndian>, I::IntoIter>
+    fn join_ones_be<I>(&self, iter: I) -> JoinOnes<'_, Self, BigEndian, I::IntoIter>
     where
-        Self: Sized,
         I: IntoIterator,
     {
         self.join_ones_in(iter)
