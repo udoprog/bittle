@@ -19,7 +19,7 @@ Add `bittle` as a dependency in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-bittle = "0.5.7"
+bittle = "0.6.0"
 ```
 
 <br>
