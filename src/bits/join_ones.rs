@@ -1,14 +1,26 @@
+use crate::Endian;
+
+use super::Bits;
+
 /// A joined iterator.
 ///
 /// Created using [`Bits::join_ones`][crate::Bits::join_ones].
-pub struct JoinOnes<A, B> {
-    mask: A,
+pub struct JoinOnes<'a, A, E, B>
+where
+    A: 'a + ?Sized + Bits,
+    E: Endian,
+{
+    mask: A::IterOnesIn<'a, E>,
     iter: B,
     last: u32,
 }
 
-impl<A, B> JoinOnes<A, B> {
-    pub(crate) fn new(mask: A, iter: B) -> Self {
+impl<'a, A, E, B> JoinOnes<'a, A, E, B>
+where
+    A: ?Sized + Bits,
+    E: Endian,
+{
+    pub(crate) fn new(mask: A::IterOnesIn<'a, E>, iter: B) -> Self {
         Self {
             mask,
             iter,
@@ -17,9 +29,10 @@ impl<A, B> JoinOnes<A, B> {
     }
 }
 
-impl<A, B> Iterator for JoinOnes<A, B>
+impl<'a, A, E, B> Iterator for JoinOnes<'a, A, E, B>
 where
-    A: Iterator<Item = u32>,
+    A: 'a + ?Sized + Bits,
+    E: Endian,
     B: Iterator,
 {
     type Item = B::Item;
