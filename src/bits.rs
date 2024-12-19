@@ -657,20 +657,24 @@ impl<T> Bits for &T
 where
     T: ?Sized + Bits,
 {
-    type IterOnes<'a> = T::IterOnes<'a>
+    type IterOnes<'a>
+        = T::IterOnes<'a>
     where
         Self: 'a;
 
-    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
+    type IterOnesIn<'a, E>
+        = T::IterOnesIn<'a, E>
     where
         Self: 'a,
         E: Endian;
 
-    type IterZeros<'a> = T::IterZeros<'a>
+    type IterZeros<'a>
+        = T::IterZeros<'a>
     where
         Self: 'a;
 
-    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
+    type IterZerosIn<'a, E>
+        = T::IterZerosIn<'a, E>
     where
         Self: 'a,
         E: Endian;
@@ -744,21 +748,25 @@ impl<T> Bits for &mut T
 where
     T: ?Sized + Bits,
 {
-    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
+    type IterOnesIn<'a, E>
+        = T::IterOnesIn<'a, E>
     where
         Self: 'a,
         E: Endian;
 
-    type IterOnes<'a> = T::IterOnes<'a>
+    type IterOnes<'a>
+        = T::IterOnes<'a>
     where
         Self: 'a;
 
-    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
+    type IterZerosIn<'a, E>
+        = T::IterZerosIn<'a, E>
     where
         Self: 'a,
         E: Endian;
 
-    type IterZeros<'a> = T::IterZeros<'a>
+    type IterZeros<'a>
+        = T::IterZeros<'a>
     where
         Self: 'a;
 

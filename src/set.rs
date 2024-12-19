@@ -407,20 +407,24 @@ where
     T: ?Sized + Bits,
     U: Endian,
 {
-    type IterOnes<'a> = T::IterOnesIn<'a, U>
+    type IterOnes<'a>
+        = T::IterOnesIn<'a, U>
     where
         Self: 'a;
 
-    type IterOnesIn<'a, E> = T::IterOnesIn<'a, E>
+    type IterOnesIn<'a, E>
+        = T::IterOnesIn<'a, E>
     where
         Self: 'a,
         E: Endian;
 
-    type IterZeros<'a> = T::IterZerosIn<'a, U>
+    type IterZeros<'a>
+        = T::IterZerosIn<'a, U>
     where
         Self: 'a;
 
-    type IterZerosIn<'a, E> = T::IterZerosIn<'a, E>
+    type IterZerosIn<'a, E>
+        = T::IterZerosIn<'a, E>
     where
         Self: 'a,
         E: Endian;
@@ -557,9 +561,15 @@ where
     const ZEROS: Self = Self::new_in(T::ZEROS);
 
     type IntoIterOnes = T::IntoIterOnesIn<U>;
-    type IntoIterOnesIn<E> = T::IntoIterOnesIn<E> where E: Endian;
+    type IntoIterOnesIn<E>
+        = T::IntoIterOnesIn<E>
+    where
+        E: Endian;
     type IntoIterZeros = T::IntoIterZerosIn<U>;
-    type IntoIterZerosIn<E> = T::IntoIterZerosIn<E> where E: Endian;
+    type IntoIterZerosIn<E>
+        = T::IntoIterZerosIn<E>
+    where
+        E: Endian;
 
     #[inline]
     fn zeros() -> Self {

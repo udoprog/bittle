@@ -87,10 +87,24 @@ macro_rules! number {
         impl crate::bits::Sealed for $ty {}
 
         impl Bits for $ty {
-            type IterOnes<'a> = IterOnes<Self, DefaultEndian> where Self: 'a;
-            type IterOnesIn<'a, E> = IterOnes<Self, E> where Self: 'a, E: Endian;
-            type IterZeros<'a> = IterZeros<Self, DefaultEndian> where Self: 'a;
-            type IterZerosIn<'a, E> = IterZeros<Self, E> where Self: 'a, E: Endian;
+            type IterOnes<'a>
+                = IterOnes<Self, DefaultEndian>
+            where
+                Self: 'a;
+            type IterOnesIn<'a, E>
+                = IterOnes<Self, E>
+            where
+                Self: 'a,
+                E: Endian;
+            type IterZeros<'a>
+                = IterZeros<Self, DefaultEndian>
+            where
+                Self: 'a;
+            type IterZerosIn<'a, E>
+                = IterZeros<Self, E>
+            where
+                Self: 'a,
+                E: Endian;
 
             #[inline]
             fn count_ones(&self) -> u32 {
@@ -216,9 +230,15 @@ macro_rules! number {
             const ONES: Self = <$ty as Number>::ONES;
 
             type IntoIterOnes = IterOnes<Self, DefaultEndian>;
-            type IntoIterOnesIn<E> = IterOnes<Self, E> where E: Endian;
+            type IntoIterOnesIn<E>
+                = IterOnes<Self, E>
+            where
+                E: Endian;
             type IntoIterZeros = IterZeros<Self, DefaultEndian>;
-            type IntoIterZerosIn<E> = IterZeros<Self, E> where E: Endian;
+            type IntoIterZerosIn<E>
+                = IterZeros<Self, E>
+            where
+                E: Endian;
 
             #[inline]
             fn zeros() -> Self {

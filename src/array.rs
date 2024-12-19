@@ -19,9 +19,15 @@ where
     const ONES: Self = [T::ONES; N];
 
     type IntoIterOnes = IntoIterOnes<T, N, DefaultEndian>;
-    type IntoIterOnesIn<E> = IntoIterOnes<T, N, E> where E: Endian;
+    type IntoIterOnesIn<E>
+        = IntoIterOnes<T, N, E>
+    where
+        E: Endian;
     type IntoIterZeros = IntoIterZeros<T, N, DefaultEndian>;
-    type IntoIterZerosIn<E> = IntoIterZeros<T, N, E> where E: Endian;
+    type IntoIterZerosIn<E>
+        = IntoIterZeros<T, N, E>
+    where
+        E: Endian;
 
     #[inline]
     fn zeros() -> Self {
@@ -128,10 +134,24 @@ impl<T, const N: usize> Bits for [T; N]
 where
     T: Eq + BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
-    type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
-    type IterZeros<'a> = IterZeros<'a, T, DefaultEndian> where Self: 'a;
-    type IterZerosIn<'a, E> = IterZeros<'a, T, E> where Self: 'a, E: Endian;
+    type IterOnes<'a>
+        = IterOnes<'a, T, DefaultEndian>
+    where
+        Self: 'a;
+    type IterOnesIn<'a, E>
+        = IterOnes<'a, T, E>
+    where
+        Self: 'a,
+        E: Endian;
+    type IterZeros<'a>
+        = IterZeros<'a, T, DefaultEndian>
+    where
+        Self: 'a;
+    type IterZerosIn<'a, E>
+        = IterZeros<'a, T, E>
+    where
+        Self: 'a,
+        E: Endian;
 
     /// Count the number of ones in the array.
     ///

@@ -9,10 +9,24 @@ impl<T> Bits for [T]
 where
     T: BitsOwned,
 {
-    type IterOnes<'a> = IterOnes<'a, T, DefaultEndian> where Self: 'a;
-    type IterOnesIn<'a, E> = IterOnes<'a, T, E> where Self: 'a, E: Endian;
-    type IterZeros<'a> = IterZeros<'a, T, DefaultEndian> where Self: 'a;
-    type IterZerosIn<'a, E> = IterZeros<'a, T, E> where Self: 'a, E: Endian;
+    type IterOnes<'a>
+        = IterOnes<'a, T, DefaultEndian>
+    where
+        Self: 'a;
+    type IterOnesIn<'a, E>
+        = IterOnes<'a, T, E>
+    where
+        Self: 'a,
+        E: Endian;
+    type IterZeros<'a>
+        = IterZeros<'a, T, DefaultEndian>
+    where
+        Self: 'a;
+    type IterZerosIn<'a, E>
+        = IterZeros<'a, T, E>
+    where
+        Self: 'a,
+        E: Endian;
 
     /// Count the number of ones in the slice.
     ///
