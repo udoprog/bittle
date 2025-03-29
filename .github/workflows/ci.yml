@@ -18,8 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: dtolnay/rust-toolchain@1.65
-    - run: cargo test --workspace --all-targets
-    - run: cargo test --workspace --doc
+    - run: cargo build --workspace --lib
 
   test:
     runs-on: ubuntu-latest
