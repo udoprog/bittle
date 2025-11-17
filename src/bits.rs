@@ -49,7 +49,7 @@ pub(crate) use self::sealed::Sealed;
 /// assert!(a.iter_ones().eq(b.iter_ones()));
 /// ```
 pub trait Bits: Sealed {
-    /// The iterator over zeros in this bit pattern using [`DefaultEndian`]
+    /// The iterator over ones in this bit pattern using [`DefaultEndian`]
     /// indexing.
     ///
     /// See [`Bits::iter_ones`].
