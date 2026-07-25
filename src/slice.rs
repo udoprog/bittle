@@ -94,6 +94,18 @@ where
     /// let a = a.as_slice();
     /// assert!(!a.all_zeros());
     /// ```
+    ///
+    /// A slice without capacity is vacuously all zeros:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: &[u8] = &[];
+    /// assert!(a.all_zeros());
+    ///
+    /// let a: &[[u8; 0]] = &[[]; 4];
+    /// assert!(a.all_zeros());
+    /// ```
     #[inline]
     fn all_zeros(&self) -> bool {
         self.iter().all(Bits::all_zeros)
@@ -113,6 +125,18 @@ where
     /// let a: [u8; 2] = bittle::set![4, 11, 14];
     /// let a = a.as_slice();
     /// assert!(!a.all_ones());
+    /// ```
+    ///
+    /// A slice without capacity is vacuously all ones:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: &[u8] = &[];
+    /// assert!(a.all_ones());
+    ///
+    /// let a: &[[u8; 0]] = &[[]; 4];
+    /// assert!(a.all_ones());
     /// ```
     #[inline]
     fn all_ones(&self) -> bool {
@@ -146,11 +170,30 @@ where
     /// let a: &[u8] = a.as_slice();
     /// assert!(a.test_bit_in::<BigEndian>(4));
     /// ```
+    ///
+    /// A slice without capacity, either because it is empty or because its
+    /// element type holds no bits, holds no bits so every bit tests as unset:
+    ///
+    /// ```
+    /// use bittle::{Bits, BigEndian};
+    ///
+    /// let a: &[u8] = &[];
+    /// assert!(!a.test_bit_in::<BigEndian>(0));
+    /// assert!(!a.test_bit_in::<BigEndian>(u32::MAX));
+    ///
+    /// let a: &[[u8; 0]] = &[[]; 4];
+    /// assert!(!a.test_bit_in::<BigEndian>(0));
+    /// assert!(!a.test_bit_in::<BigEndian>(u32::MAX));
+    /// ```
     #[inline]
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian,
     {
+        if T::BITS == 0 || self.is_empty() {
+            return false;
+        }
+
         self[(index / T::BITS) as usize % self.len()].test_bit_in::<E>(index % T::BITS)
     }
 
@@ -247,11 +290,30 @@ where
     /// a.set_bit(13);
     /// assert!(a.iter_ones().eq([7, 13]));
     /// ```
+    ///
+    /// A slice without capacity, either because it is empty or because its
+    /// element type holds no bits, cannot store any bits so this is a no-op:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut};
+    ///
+    /// let a: &mut [u8] = &mut [];
+    /// a.set_bit(0);
+    /// assert!(a.all_zeros());
+    ///
+    /// let a: &mut [[u8; 0]] = &mut [[]; 4];
+    /// a.set_bit(0);
+    /// assert!(a.all_zeros());
+    /// ```
     #[inline]
     fn set_bit_in<E>(&mut self, index: u32)
     where
         E: Endian,
     {
+        if T::BITS == 0 || self.is_empty() {
+            return;
+        }
+
         self[(index / T::BITS) as usize % self.len()].set_bit_in::<E>(index % T::BITS);
     }
 
@@ -272,11 +334,30 @@ where
     /// a.clear_bit(13);
     /// assert!(a.iter_ones().eq([7]));
     /// ```
+    ///
+    /// A slice without capacity, either because it is empty or because its
+    /// element type holds no bits, cannot store any bits so this is a no-op:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut};
+    ///
+    /// let a: &mut [u8] = &mut [];
+    /// a.clear_bit(0);
+    /// assert!(a.all_ones());
+    ///
+    /// let a: &mut [[u8; 0]] = &mut [[]; 4];
+    /// a.clear_bit(0);
+    /// assert!(a.all_ones());
+    /// ```
     #[inline]
     fn clear_bit_in<E>(&mut self, index: u32)
     where
         E: Endian,
     {
+        if T::BITS == 0 || self.is_empty() {
+            return;
+        }
+
         self[(index / T::BITS) as usize % self.len()].clear_bit_in::<E>(index % T::BITS);
     }
 

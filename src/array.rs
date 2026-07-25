@@ -39,11 +39,29 @@ where
         Self::ONES
     }
 
+    /// Set the given bit in the array.
+    ///
+    /// An array without capacity, such as `[u8; 0]` or `[[u8; 0]; 4]`, cannot
+    /// store any bits so the array is returned unmodified:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a = <[u8; 0]>::ZEROS.with_bit(0);
+    /// assert!(a.iter_ones().eq([]));
+    ///
+    /// let a = <[[u8; 0]; 4]>::ZEROS.with_bit(0);
+    /// assert!(a.iter_ones().eq([]));
+    /// ```
     #[inline]
     fn with_bit_in<E>(mut self, bit: u32) -> Self
     where
         E: Endian,
     {
+        if Self::BITS == 0 {
+            return self;
+        }
+
         self[(bit / T::BITS) as usize % N].set_bit_in::<E>(bit % T::BITS);
         self
     }
@@ -53,11 +71,29 @@ where
         self.with_bit_in::<DefaultEndian>(bit)
     }
 
+    /// Clear the given bit in the array.
+    ///
+    /// An array without capacity, such as `[u8; 0]` or `[[u8; 0]; 4]`, cannot
+    /// store any bits so the array is returned unmodified:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsOwned};
+    ///
+    /// let a = <[u8; 0]>::ONES.without_bit(0);
+    /// assert!(a.iter_ones().eq([]));
+    ///
+    /// let a = <[[u8; 0]; 4]>::ONES.without_bit(0);
+    /// assert!(a.iter_ones().eq([]));
+    /// ```
     #[inline]
     fn without_bit_in<E>(mut self, bit: u32) -> Self
     where
         E: Endian,
     {
+        if Self::BITS == 0 {
+            return self;
+        }
+
         self[(bit / T::BITS) as usize % N].clear_bit_in::<E>(bit % T::BITS);
         self
     }
@@ -223,6 +259,18 @@ where
     /// let a: [u8; 2] = bittle::set![4, 11, 14];
     /// assert!(!a.all_zeros());
     /// ```
+    ///
+    /// An array without capacity is vacuously all zeros:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: [u8; 0] = [];
+    /// assert!(a.all_zeros());
+    ///
+    /// let a: [[u8; 0]; 4] = [[]; 4];
+    /// assert!(a.all_zeros());
+    /// ```
     #[inline]
     fn all_zeros(&self) -> bool {
         *self == Self::ZEROS
@@ -240,6 +288,18 @@ where
     ///
     /// let a: [u8; 2] = bittle::set![4, 11, 14];
     /// assert!(!a.all_ones());
+    /// ```
+    ///
+    /// An array without capacity is vacuously all ones:
+    ///
+    /// ```
+    /// use bittle::Bits;
+    ///
+    /// let a: [u8; 0] = [];
+    /// assert!(a.all_ones());
+    ///
+    /// let a: [[u8; 0]; 4] = [[]; 4];
+    /// assert!(a.all_ones());
     /// ```
     #[inline]
     fn all_ones(&self) -> bool {
@@ -271,11 +331,30 @@ where
     /// let mut a: [u8; 2] = bittle::set_be![4, 11, 14];
     /// assert!(a.test_bit_in::<BigEndian>(4));
     /// ```
+    ///
+    /// An array without capacity, such as `[u8; 0]` or `[[u8; 0]; 4]`, holds no
+    /// bits so every bit tests as unset:
+    ///
+    /// ```
+    /// use bittle::{Bits, BigEndian};
+    ///
+    /// let a: [u8; 0] = [];
+    /// assert!(!a.test_bit_in::<BigEndian>(0));
+    /// assert!(!a.test_bit_in::<BigEndian>(u32::MAX));
+    ///
+    /// let a: [[u8; 0]; 4] = [[]; 4];
+    /// assert!(!a.test_bit_in::<BigEndian>(0));
+    /// assert!(!a.test_bit_in::<BigEndian>(u32::MAX));
+    /// ```
     #[inline]
     fn test_bit_in<E>(&self, index: u32) -> bool
     where
         E: Endian,
     {
+        if Self::BITS == 0 {
+            return false;
+        }
+
         self[(index / T::BITS) as usize % N].test_bit_in::<E>(index % T::BITS)
     }
 
@@ -356,11 +435,31 @@ impl<T, const N: usize> BitsMut for [T; N]
 where
     T: Eq + BitsOwned,
 {
+    /// Set the given bit in the array.
+    ///
+    /// An array without capacity, such as `[u8; 0]` or `[[u8; 0]; 4]`, cannot
+    /// store any bits so this is a no-op:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut};
+    ///
+    /// let mut a: [u8; 0] = [];
+    /// a.set_bit(0);
+    /// assert!(a.all_zeros());
+    ///
+    /// let mut a: [[u8; 0]; 4] = [[]; 4];
+    /// a.set_bit(0);
+    /// assert!(a.all_zeros());
+    /// ```
     #[inline]
     fn set_bit_in<E>(&mut self, index: u32)
     where
         E: Endian,
     {
+        if Self::BITS == 0 {
+            return;
+        }
+
         self[(index / T::BITS) as usize % N].set_bit_in::<E>(index % T::BITS);
     }
 
@@ -369,11 +468,31 @@ where
         self.set_bit_in::<DefaultEndian>(index);
     }
 
+    /// Clear the given bit in the array.
+    ///
+    /// An array without capacity, such as `[u8; 0]` or `[[u8; 0]; 4]`, cannot
+    /// store any bits so this is a no-op:
+    ///
+    /// ```
+    /// use bittle::{Bits, BitsMut, BitsOwned};
+    ///
+    /// let mut a = <[u8; 0]>::ONES;
+    /// a.clear_bit(0);
+    /// assert!(a.all_ones());
+    ///
+    /// let mut a = <[[u8; 0]; 4]>::ONES;
+    /// a.clear_bit(0);
+    /// assert!(a.all_ones());
+    /// ```
     #[inline]
     fn clear_bit_in<E>(&mut self, index: u32)
     where
         E: Endian,
     {
+        if Self::BITS == 0 {
+            return;
+        }
+
         self[(index / T::BITS) as usize % N].clear_bit_in::<E>(index % T::BITS);
     }
 
