@@ -16,7 +16,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! bittle = "0.6.0"
+//! bittle = "0.7.0"
 //! ```
 //!
 //! <br>
